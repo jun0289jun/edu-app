@@ -66,23 +66,54 @@ export default function CounterPage() {
     );
   };
 
-  // 한글 숫자 변환
+  // 한글 숫자 변환 (자연스러운 발음)
   const convertToKorean = (num: number): string => {
     const koreanNumbers = ['영', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
-    const koreanUnits = ['', '십', '백', '천', '만', '십만', '백만'];
     
     if (num === 0) return '영';
     
     let result = '';
-    let unitIndex = 0;
     
-    while (num > 0 && unitIndex < koreanUnits.length) {
-      const digit = num % 10;
-      if (digit !== 0) {
-        result = koreanNumbers[digit] + koreanUnits[unitIndex] + result;
-      }
-      num = Math.floor(num / 10);
-      unitIndex++;
+    // 백만 단위
+    const millions = Math.floor(num / 1000000);
+    if (millions > 0) {
+      result += millions === 1 ? '백만' : koreanNumbers[millions] + '백만';
+    }
+    
+    // 십만 단위
+    const hundredThousands = Math.floor((num % 1000000) / 100000);
+    if (hundredThousands > 0) {
+      result += hundredThousands === 1 ? '십만' : koreanNumbers[hundredThousands] + '십만';
+    }
+    
+    // 만 단위
+    const tenThousands = Math.floor((num % 100000) / 10000);
+    if (tenThousands > 0) {
+      result += koreanNumbers[tenThousands] + '만';
+    }
+    
+    // 천 단위
+    const thousands = Math.floor((num % 10000) / 1000);
+    if (thousands > 0) {
+      result += thousands === 1 ? '천' : koreanNumbers[thousands] + '천';
+    }
+    
+    // 백 단위
+    const hundreds = Math.floor((num % 1000) / 100);
+    if (hundreds > 0) {
+      result += hundreds === 1 ? '백' : koreanNumbers[hundreds] + '백';
+    }
+    
+    // 십 단위
+    const tens = Math.floor((num % 100) / 10);
+    if (tens > 0) {
+      result += tens === 1 ? '십' : koreanNumbers[tens] + '십';
+    }
+    
+    // 일 단위
+    const ones = num % 10;
+    if (ones > 0) {
+      result += koreanNumbers[ones];
     }
     
     return result;
