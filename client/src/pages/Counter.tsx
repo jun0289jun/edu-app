@@ -89,7 +89,7 @@ export default function CounterPage() {
     // 만 단위
     const tenThousands = Math.floor((num % 100000) / 10000);
     if (tenThousands > 0) {
-      result += koreanNumbers[tenThousands] + '만';
+      result += tenThousands === 1 ? '만' : koreanNumbers[tenThousands] + '만';
     }
     
     // 천 단위
