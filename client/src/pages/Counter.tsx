@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Minus, Settings, ArrowLeft } from "lucide-react";
+import { Plus, Minus, Settings, ArrowLeft, Volume2 } from "lucide-react";
 import { useLocation } from "wouter";
 
 /**
@@ -64,6 +64,90 @@ export default function CounterPage() {
         })}
       </div>
     );
+  };
+
+  // 한글 숫자 변환
+  const convertToKorean = (num: number): string => {
+    const koreanNumbers = ['영', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+    const koreanUnits = ['', '십', '백', '천', '만', '십만', '백만'];
+    
+    if (num === 0) return '영';
+    
+    let result = '';
+    let unitIndex = 0;
+    
+    while (num > 0 && unitIndex < koreanUnits.length) {
+      const digit = num % 10;
+      if (digit !== 0) {
+        result = koreanNumbers[digit] + koreanUnits[unitIndex] + result;
+      }
+      num = Math.floor(num / 10);
+      unitIndex++;
+    }
+    
+    return result;
+  };
+
+  // 영어 숫자 변환
+  const convertToEnglish = (num: number): string => {
+    const ones = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    const scales = ['', 'thousand', 'million'];
+    
+    if (num === 0) return 'zero';
+    
+    const convertHundreds = (n: number): string => {
+      let result = '';
+      const hundred = Math.floor(n / 100);
+      if (hundred > 0) {
+        result += ones[hundred] + ' hundred';
+      }
+      const remainder = n % 100;
+      if (remainder >= 20) {
+        if (result) result += ' ';
+        result += tens[Math.floor(remainder / 10)];
+        if (remainder % 10 > 0) {
+          result += ' ' + ones[remainder % 10];
+        }
+      } else if (remainder >= 10) {
+        if (result) result += ' ';
+        result += teens[remainder - 10];
+      } else if (remainder > 0) {
+        if (result) result += ' ';
+        result += ones[remainder];
+      }
+      return result;
+    };
+    
+    let result = '';
+    let scaleIndex = 0;
+    
+    while (num > 0) {
+      const chunk = num % 1000;
+      if (chunk !== 0) {
+        const chunkText = convertHundreds(chunk);
+        if (scaleIndex > 0) {
+          result = chunkText + ' ' + scales[scaleIndex] + (result ? ' ' + result : '');
+        } else {
+          result = chunkText + (result ? ' ' + result : '');
+        }
+      }
+      num = Math.floor(num / 1000);
+      scaleIndex++;
+    }
+    
+    return result;
+  };
+
+  // 음성 재생 함수
+  const speakNumber = (lang: 'ko' | 'en') => {
+    const text = lang === 'ko' ? convertToKorean(count) : convertToEnglish(count);
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
+    utterance.rate = 0.8;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
   };
 
   // 증가치 표시 포맷
@@ -163,7 +247,25 @@ export default function CounterPage() {
         {/* 숫자 표시 */}
         <div className="text-center">{renderNumberWithTransparency()}</div>
 
-        {/* 버튼 영역 */}
+        {/* 음성 버튼 */}
+        <div className="flex gap-4">
+          <button
+            onClick={() => speakNumber('ko')}
+            className="flex items-center gap-2 bg-gradient-to-b from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 active:from-purple-700 active:to-purple-800 text-white rounded-2xl px-6 py-3 transition-all duration-75 shadow-lg hover:shadow-purple-500/50 active:scale-95"
+          >
+            <Volume2 size={24} />
+            <span className="font-bold">한글</span>
+          </button>
+          <button
+            onClick={() => speakNumber('en')}
+            className="flex items-center gap-2 bg-gradient-to-b from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 active:from-purple-700 active:to-purple-800 text-white rounded-2xl px-6 py-3 transition-all duration-75 shadow-lg hover:shadow-purple-500/50 active:scale-95"
+          >
+            <Volume2 size={24} />
+            <span className="font-bold">English</span>
+          </button>
+        </div>
+
+        {/* 버튼 영억 */}
         <div className="flex gap-8 w-full max-w-sm">
           {/* + 버튼 */}
           <button
