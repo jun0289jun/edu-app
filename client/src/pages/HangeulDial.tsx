@@ -7,17 +7,43 @@ import { useLocation } from "wouter";
  * 초성, 중성, 종성을 조합하여 한글을 만들고 음성으로 읽어준다.
  */
 
-// 한글 자모 데이터
-const CHOSUNG = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-const JUNGSUNG = ['ㅏ', 'ㅑ', 'ㅓ', 'ㅕ', 'ㅗ', 'ㅛ', 'ㅜ', 'ㅠ', 'ㅡ', 'ㅣ'];
-const JONGSUNG = ['(없음)', 'ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ'];
+// 한글 자모 데이터 (초성)
+const CHOSUNG = [
+  'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅄ', 
+  'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+];
 
-// 한글 조합 함수
+// 한글 자모 데이터 (중성)
+const JUNGSUNG = [
+  'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ',
+  'ㅙ', 'ㅚ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅢ', 'ㅣ', 'ㅤ', 'ㅥ', 'ㅦ',
+  'ㅧ', 'ㅨ', 'ㅩ', 'ㅪ', 'ㅫ', 'ㅬ', 'ㅭ', 'ㅮ', 'ㅯ', 'ㅰ'
+];
+
+// 한글 자모 데이터 (종성)
+const JONGSUNG = [
+  '', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄸ', 'ㄹ',
+  'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ',
+  'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ'
+];
+
+// 한글 조합 함수 (유니코드 기반)
 const combineHangeul = (choIdx: number, jungIdx: number, jongIdx: number): string => {
-  // 종성이 없음인 경우 0으로 처리
-  const actualJongIdx = jongIdx === 0 ? 0 : jongIdx;
-  const unicode = 0xac00 + (choIdx * 21 * 28) + (jungIdx * 28) + actualJongIdx;
-  return String.fromCharCode(unicode);
+  // 유효한 인덱스 확인
+  if (choIdx < 0 || choIdx >= CHOSUNG.length || 
+      jungIdx < 0 || jungIdx >= JUNGSUNG.length ||
+      jongIdx < 0 || jongIdx >= JONGSUNG.length) {
+    return '?';
+  }
+
+  // 한글 조합: 0xAC00 + (초성 * 588) + (중성 * 28) + 종성
+  const unicode = 0xac00 + (choIdx * 588) + (jungIdx * 28) + jongIdx;
+  
+  try {
+    return String.fromCharCode(unicode);
+  } catch {
+    return '?';
+  }
 };
 
 // 다이얼 컴포넌트
@@ -98,7 +124,7 @@ const Dial: React.FC<DialProps> = ({ items, selectedIndex, onChange, label }) =>
               transform: `translateY(${offset}px)`,
             }}
           >
-            {items[idx]}
+            {items[idx] || '·'}
           </div>
         );
       }
