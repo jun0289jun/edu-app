@@ -54,7 +54,7 @@ export default function Home() {
       <div className="flex flex-col items-center justify-center flex-1 gap-16">
         {/* 4자리 숫자 표시 */}
         <div className="text-center">
-          <div className="text-9xl font-bold text-white tracking-wider font-mono drop-shadow-2xl">
+          <div className="text-[200px] font-bold text-white tracking-wider font-mono drop-shadow-2xl leading-none">
             {displayCount}
           </div>
         </div>
@@ -64,17 +64,17 @@ export default function Home() {
           {/* + 버튼 */}
           <button
             onClick={handleIncrement}
-            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-2xl py-16 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
+            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-3xl py-24 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
           >
-            <Plus size={80} strokeWidth={1.5} />
+            <Plus size={120} strokeWidth={1.5} />
           </button>
 
           {/* - 버튼 */}
           <button
             onClick={handleDecrement}
-            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-2xl py-16 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
+            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-3xl py-24 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
           >
-            <Minus size={80} strokeWidth={1.5} />
+            <Minus size={120} strokeWidth={1.5} />
           </button>
         </div>
       </div>
