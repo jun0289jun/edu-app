@@ -47,7 +47,7 @@ export default function CounterPage() {
     const leadingZeros = digits - countStr.length;
 
     return (
-      <div className="text-[200px] font-bold text-white tracking-wider font-mono drop-shadow-2xl leading-none flex justify-center">
+      <div className="max-w-full overflow-hidden text-[clamp(4.5rem,22vw,200px)] font-bold text-white tracking-tight sm:tracking-wider font-mono drop-shadow-2xl leading-none flex justify-center">
         {Array.from({ length: digits }).map((_, idx) => {
           const isLeadingZero = idx < leadingZeros;
           const digit = displayCount[idx];
@@ -214,7 +214,7 @@ export default function CounterPage() {
 
       {/* 설정 패널 */}
       {showSettings && (
-        <div className="absolute top-24 right-6 bg-slate-800 rounded-2xl p-6 shadow-2xl z-50 w-96 max-h-[70vh] overflow-y-auto">
+        <div className="absolute top-24 right-4 sm:right-6 bg-slate-800 rounded-2xl p-6 shadow-2xl z-50 w-[calc(100vw-2rem)] sm:w-96 max-h-[70vh] overflow-y-auto">
           <h2 className="text-white text-lg font-bold mb-6">설정</h2>
 
           {/* 자리수 조절 */}
@@ -274,7 +274,7 @@ export default function CounterPage() {
       )}
 
       {/* 메인 컨텐츠 */}
-      <div className="flex flex-col items-center justify-center flex-1 gap-16">
+      <div className="flex flex-col items-center justify-center flex-1 gap-10 sm:gap-16 w-full max-w-full">
         {/* 숫자 표시 */}
         <div className="text-center">{renderNumberWithTransparency()}</div>
 
@@ -297,21 +297,21 @@ export default function CounterPage() {
         </div>
 
         {/* 버튼 영억 */}
-        <div className="flex gap-8 w-full max-w-sm">
+        <div className="flex gap-4 sm:gap-8 w-full max-w-sm">
           {/* + 버튼 */}
           <button
             onClick={handleIncrement}
-            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-3xl py-24 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
+            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-3xl py-16 sm:py-24 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
           >
-            <Plus size={120} strokeWidth={1.5} />
+            <Plus className="h-20 w-20 sm:h-[120px] sm:w-[120px]" strokeWidth={1.5} />
           </button>
 
           {/* - 버튼 */}
           <button
             onClick={handleDecrement}
-            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-3xl py-24 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
+            className="flex-1 bg-gradient-to-b from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 active:from-slate-700 active:to-slate-800 text-white rounded-3xl py-16 sm:py-24 flex items-center justify-center transition-all duration-75 shadow-2xl hover:shadow-slate-500/50 active:scale-95"
           >
-            <Minus size={120} strokeWidth={1.5} />
+            <Minus className="h-20 w-20 sm:h-[120px] sm:w-[120px]" strokeWidth={1.5} />
           </button>
         </div>
 

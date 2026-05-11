@@ -139,7 +139,7 @@ const Dial: React.FC<DialProps> = ({ items, selectedIndex, onChange, label }) =>
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onTouchStart={handleMouseDown}
-        className="relative w-24 h-80 bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing border border-slate-700 shadow-lg"
+        className="relative w-20 sm:w-24 h-72 sm:h-80 bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing border border-slate-700 shadow-lg touch-none select-none"
       >
         {/* 중앙 선택 표시 */}
         <div className="absolute top-1/2 left-0 right-0 h-20 border-t-2 border-b-2 border-blue-500 -translate-y-1/2 pointer-events-none" />
@@ -209,15 +209,15 @@ export default function HangeulDialPage() {
       </div>
 
       {/* 메인 컨텐츠 */}
-      <div className="flex flex-col items-center gap-12 flex-1 justify-center">
+      <div className="flex flex-col items-center gap-8 sm:gap-12 flex-1 justify-center w-full max-w-full">
         {/* 결과 글자 표시 */}
         <div className="text-center">
           <p className="text-slate-400 text-sm mb-2">조합된 글자</p>
-          <div className="text-9xl font-bold text-white drop-shadow-2xl">{hangeul}</div>
+          <div className="text-7xl sm:text-9xl font-bold text-white drop-shadow-2xl">{hangeul}</div>
         </div>
 
         {/* 다이얼 영역 */}
-        <div className="flex gap-12 items-end">
+        <div className="flex gap-5 sm:gap-12 items-end justify-center w-full max-w-full">
           <Dial
             items={CHOSUNG}
             selectedIndex={choIdx}
