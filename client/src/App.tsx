@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import HomePage from "./pages/HomePage";
@@ -10,15 +10,19 @@ import HangeulDialPage from "./pages/HangeulDial";
 
 
 function Router() {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "") || undefined;
+
   return (
-    <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/counter" component={CounterPage} />
-      <Route path="/hangeul" component={HangeulDialPage} />
-      <Route path="/404" component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <WouterRouter base={base}>
+      <Switch>
+        <Route path="/" component={HomePage} />
+        <Route path="/counter" component={CounterPage} />
+        <Route path="/hangeul" component={HangeulDialPage} />
+        <Route path="/404" component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+    </WouterRouter>
   );
 }
 
