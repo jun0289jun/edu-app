@@ -3,6 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export type SpeechSpeed = "slow" | "normal" | "fast";
 export type SpeechTone = "low" | "normal" | "bright";
 
+export interface SpeechVoiceOption {
+  voiceURI: string;
+  label: string;
+  description: string;
+}
+
 const STORAGE_KEY = "edu-app-speech-settings";
 
 const SPEED_RATE: Record<SpeechSpeed, number> = {
@@ -17,11 +23,62 @@ const TONE_PITCH: Record<SpeechTone, number> = {
   bright: 1.25,
 };
 
+const LANGUAGE_LABELS = {
+  ko: "한글",
+  en: "영어",
+} as const;
+
+const GENDER_LABELS = {
+  female: "여성",
+  male: "남성",
+  unknown: "대표",
+} as const;
+
+const FEMALE_KEYWORDS = [
+  "female",
+  "woman",
+  "zira",
+  "samantha",
+  "susan",
+  "karen",
+  "moira",
+  "tessa",
+  "victoria",
+  "yuna",
+  "sunhi",
+  "heami",
+  "seoyeon",
+  "미진",
+  "서연",
+  "여성",
+];
+
+const MALE_KEYWORDS = [
+  "male",
+  "man",
+  "david",
+  "mark",
+  "alex",
+  "daniel",
+  "fred",
+  "george",
+  "hojun",
+  "minjun",
+  "민준",
+  "호준",
+  "남성",
+];
+
+const PREFERRED_VOICE_KEYWORDS = ["google", "microsoft", "apple", "siri", "natural", "neural", "premium", "online", "enhanced"];
+
 interface StoredSpeechSettings {
   speed?: SpeechSpeed;
   tone?: SpeechTone;
   voiceURI?: string;
 }
+
+type SupportedLanguage = keyof typeof LANGUAGE_LABELS;
+type VoiceGender = keyof typeof GENDER_LABELS;
 
 const isSpeechSpeed = (value: unknown): value is SpeechSpeed =>
   value === "slow" || value === "normal" || value === "fast";
@@ -44,6 +101,71 @@ const readSettings = (): Required<StoredSpeechSettings> => {
   } catch {
     return { speed: "normal", tone: "normal", voiceURI: "" };
   }
+};
+
+const getSupportedLanguage = (voice: SpeechSynthesisVoice): SupportedLanguage | null => {
+  const lang = voice.lang.toLowerCase();
+  if (lang.startsWith("ko")) return "ko";
+  if (lang.startsWith("en")) return "en";
+  return null;
+};
+
+const inferVoiceGender = (voice: SpeechSynthesisVoice): VoiceGender => {
+  const text = `${voice.name} ${voice.voiceURI}`.toLowerCase();
+  if (FEMALE_KEYWORDS.some((keyword) => text.includes(keyword))) return "female";
+  if (MALE_KEYWORDS.some((keyword) => text.includes(keyword))) return "male";
+  return "unknown";
+};
+
+const scoreVoice = (voice: SpeechSynthesisVoice, language: SupportedLanguage): number => {
+  const text = `${voice.name} ${voice.voiceURI}`.toLowerCase();
+  let score = 0;
+  if (voice.lang.toLowerCase() === (language === "ko" ? "ko-kr" : "en-us")) score += 8;
+  if (voice.default) score += 4;
+  if (voice.localService) score += 2;
+  PREFERRED_VOICE_KEYWORDS.forEach((keyword) => {
+    if (text.includes(keyword)) score += 3;
+  });
+  return score;
+};
+
+const createVoiceOption = (voice: SpeechSynthesisVoice, language: SupportedLanguage, gender: VoiceGender, index?: number): SpeechVoiceOption => {
+  const genderLabel = gender === "unknown" && index ? `${GENDER_LABELS[gender]} ${index}` : GENDER_LABELS[gender];
+  return {
+    voiceURI: voice.voiceURI,
+    label: `${LANGUAGE_LABELS[language]} ${genderLabel}`,
+    description: `${voice.name} (${voice.lang})`,
+  };
+};
+
+const pickRepresentativeVoiceOptions = (voices: SpeechSynthesisVoice[]): SpeechVoiceOption[] => {
+  const supportedVoices = voices.filter((voice) => getSupportedLanguage(voice));
+  const selected = new Map<string, SpeechVoiceOption>();
+
+  (["ko", "en"] as SupportedLanguage[]).forEach((language) => {
+    (["female", "male"] as VoiceGender[]).forEach((gender) => {
+      const candidates = supportedVoices
+        .filter((voice) => getSupportedLanguage(voice) === language && inferVoiceGender(voice) === gender)
+        .sort((a, b) => scoreVoice(b, language) - scoreVoice(a, language) || a.name.localeCompare(b.name));
+
+      if (candidates[0]) {
+        selected.set(candidates[0].voiceURI, createVoiceOption(candidates[0], language, gender));
+      }
+    });
+
+    const languageSelectedCount = Array.from(selected.values()).filter((option) => option.label.startsWith(LANGUAGE_LABELS[language])).length;
+    const fallbackCount = Math.max(0, 2 - languageSelectedCount);
+    const fallbackVoices = supportedVoices
+      .filter((voice) => getSupportedLanguage(voice) === language && !selected.has(voice.voiceURI))
+      .sort((a, b) => scoreVoice(b, language) - scoreVoice(a, language) || a.name.localeCompare(b.name))
+      .slice(0, fallbackCount);
+
+    fallbackVoices.forEach((voice, index) => {
+      selected.set(voice.voiceURI, createVoiceOption(voice, language, "unknown", index + 1));
+    });
+  });
+
+  return Array.from(selected.values());
 };
 
 export function useSpeechSettings() {
@@ -69,10 +191,13 @@ export function useSpeechSettings() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ speed, tone, voiceURI }));
   }, [speed, tone, voiceURI]);
 
-  const availableVoices = useMemo(
-    () => voices.filter((voice) => voice.lang.startsWith("ko") || voice.lang.startsWith("en")),
-    [voices],
-  );
+  const availableVoices = useMemo(() => pickRepresentativeVoiceOptions(voices), [voices]);
+
+  useEffect(() => {
+    if (!voiceURI) return;
+    if (availableVoices.some((voice) => voice.voiceURI === voiceURI)) return;
+    setVoiceURI("");
+  }, [availableVoices, voiceURI]);
 
   const createUtterance = useCallback(
     (text: string, lang: "ko-KR" | "en-US") => {

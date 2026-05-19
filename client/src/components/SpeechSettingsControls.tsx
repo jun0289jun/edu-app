@@ -1,4 +1,4 @@
-import type { SpeechSpeed, SpeechTone } from "@/hooks/useSpeechSettings";
+import type { SpeechSpeed, SpeechTone, SpeechVoiceOption } from "@/hooks/useSpeechSettings";
 
 interface SpeechSettingsControlsProps {
   speed: SpeechSpeed;
@@ -7,7 +7,7 @@ interface SpeechSettingsControlsProps {
   onToneChange: (tone: SpeechTone) => void;
   voiceURI: string;
   onVoiceChange: (voiceURI: string) => void;
-  voices: SpeechSynthesisVoice[];
+  voices: SpeechVoiceOption[];
 }
 
 const SPEED_OPTIONS: Array<{ value: SpeechSpeed; label: string }> = [
@@ -80,11 +80,11 @@ export function SpeechSettingsControls({
           <option value="">자동 선택</option>
           {voices.map((voice) => (
             <option key={voice.voiceURI} value={voice.voiceURI}>
-              {voice.name} ({voice.lang})
+              {voice.label} · {voice.description}
             </option>
           ))}
         </select>
-        <p className="text-slate-400 text-xs mt-2">사용 가능한 목소리는 브라우저와 기기에 따라 달라집니다.</p>
+        <p className="text-slate-400 text-xs mt-2">한글과 영어의 대표 남성·여성 목소리만 간단히 보여줍니다.</p>
       </div>
     </div>
   );
