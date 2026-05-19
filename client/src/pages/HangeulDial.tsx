@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ArrowLeft, Volume2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Volume2, RotateCcw, Settings } from "lucide-react";
 import { useLocation } from "wouter";
+import { SpeechSettingsControls } from "@/components/SpeechSettingsControls";
+import { useSpeechSettings } from "@/hooks/useSpeechSettings";
 
 // 유니코드 기준 정확한 자모 배열 (한글 유니코드: 0xAC00 + 초성*588 + 중성*28 + 종성)
 const ALL_CHOSUNG = [
@@ -169,6 +171,9 @@ export default function HangeulDialPage() {
   const [jongPos, setJongPos] = useState(0);
   const [showJongsung, setShowJongsung] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const speechSettings = useSpeechSettings();
+  const { createUtterance } = speechSettings;
 
   const config = DIFFICULTY[difficulty];
 
@@ -195,9 +200,7 @@ export default function HangeulDialPage() {
   };
 
   const speakHangeul = () => {
-    const utterance = new SpeechSynthesisUtterance(hangeul);
-    utterance.lang = 'ko-KR';
-    utterance.rate = 0.8;
+    const utterance = createUtterance(hangeul, 'ko-KR');
     speechSynthesis.cancel();
     speechSynthesis.speak(utterance);
   };
@@ -209,11 +212,10 @@ export default function HangeulDialPage() {
         const next = (prev + 1) % chosungItems.length;
         const nextChoUni = config.chosungIdx[next] ?? 0;
         setTimeout(() => {
-          const utterance = new SpeechSynthesisUtterance(
-            combineHangeul(nextChoUni, jungUniIdx, jongUniIdx)
+          const utterance = createUtterance(
+            combineHangeul(nextChoUni, jungUniIdx, jongUniIdx),
+            'ko-KR',
           );
-          utterance.lang = 'ko-KR';
-          utterance.rate = 0.8;
           speechSynthesis.cancel();
           speechSynthesis.speak(utterance);
         }, 100);
@@ -221,7 +223,7 @@ export default function HangeulDialPage() {
       });
     }, 1500);
     return () => clearInterval(interval);
-  }, [autoPlay, jungUniIdx, jongUniIdx, chosungItems.length]);
+  }, [autoPlay, jungUniIdx, jongUniIdx, chosungItems.length, createUtterance]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-black flex flex-col items-center justify-center px-4 relative">
@@ -231,8 +233,28 @@ export default function HangeulDialPage() {
           <ArrowLeft size={32} />
         </button>
         <h1 className="text-2xl font-bold">한글 배우기</h1>
-        <div className="w-8" />
+        <button onClick={() => setShowSettings(!showSettings)} className="text-2xl hover:opacity-70 transition-opacity">
+          <Settings size={32} />
+        </button>
       </div>
+
+      {showSettings && (
+        <div className="absolute top-20 right-4 sm:right-6 bg-slate-800 rounded-2xl p-6 shadow-2xl z-50 w-[calc(100vw-2rem)] sm:w-96 max-h-[70vh] overflow-y-auto">
+          <h2 className="text-white text-lg font-bold mb-6">설정</h2>
+          <SpeechSettingsControls
+            speed={speechSettings.speed}
+            onSpeedChange={speechSettings.setSpeed}
+            tone={speechSettings.tone}
+            onToneChange={speechSettings.setTone}
+            voiceURI={speechSettings.voiceURI}
+            onVoiceChange={speechSettings.setVoiceURI}
+            voices={speechSettings.voices}
+          />
+          <button onClick={() => setShowSettings(false)} className="w-full mt-6 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-all">
+            닫기
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col items-center gap-6 sm:gap-10 flex-1 justify-center w-full max-w-full pt-20">
         {/* 난이도 선택 */}

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Plus, Minus, Settings, ArrowLeft, Volume2, Shuffle } from "lucide-react";
 import { useLocation } from "wouter";
+import { SpeechSettingsControls } from "@/components/SpeechSettingsControls";
+import { useSpeechSettings } from "@/hooks/useSpeechSettings";
 
 export default function CounterPage() {
   const [, setLocation] = useLocation();
@@ -13,6 +15,7 @@ export default function CounterPage() {
   const [isRolling, setIsRolling] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const rollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speechSettings = useSpeechSettings();
 
   const maxCount = Math.pow(10, digits) - 1;
 
@@ -172,9 +175,7 @@ export default function CounterPage() {
 
   const speakNumber = (lang: 'ko' | 'en') => {
     const text = lang === 'ko' ? convertToKorean(count) : convertToEnglish(count);
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
-    utterance.rate = 0.8;
+    const utterance = speechSettings.createUtterance(text, lang === 'ko' ? 'ko-KR' : 'en-US');
     speechSynthesis.cancel();
     speechSynthesis.speak(utterance);
   };
@@ -237,6 +238,17 @@ export default function CounterPage() {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="mt-8 border-t border-slate-700 pt-6">
+            <SpeechSettingsControls
+              speed={speechSettings.speed}
+              onSpeedChange={speechSettings.setSpeed}
+              tone={speechSettings.tone}
+              onToneChange={speechSettings.setTone}
+              voiceURI={speechSettings.voiceURI}
+              onVoiceChange={speechSettings.setVoiceURI}
+              voices={speechSettings.voices}
+            />
           </div>
           <button onClick={() => setShowSettings(false)} className="w-full mt-6 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-all">
             닫기
