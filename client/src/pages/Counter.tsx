@@ -113,17 +113,34 @@ export default function CounterPage() {
   };
 
   const convertToKorean = (num: number): string => {
-    const n = ['영','일','이','삼','사','오','육','칠','팔','구'];
     if (num === 0) return '영';
-    let r = '';
-    const m = Math.floor(num / 1000000); if (m > 0) r += (m === 1 ? '' : n[m]) + '백만';
-    const ht = Math.floor((num % 1000000) / 100000); if (ht > 0) r += (ht === 1 ? '' : n[ht]) + '십만';
-    const tt = Math.floor((num % 100000) / 10000); if (tt > 0) r += (tt === 1 ? '' : n[tt]) + '만';
-    const th = Math.floor((num % 10000) / 1000); if (th > 0) r += (th === 1 ? '' : n[th]) + '천';
-    const h = Math.floor((num % 1000) / 100); if (h > 0) r += (h === 1 ? '' : n[h]) + '백';
-    const t = Math.floor((num % 100) / 10); if (t > 0) r += (t === 1 ? '' : n[t]) + '십';
-    const o = num % 10; if (o > 0) r += n[o];
-    return r;
+    const n = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+    const u = ['', '십', '백', '천'];
+
+    // 4자리 이하 숫자를 한글로 변환 (천/백/십 앞의 '일'은 생략)
+    const convert4 = (val: number): string => {
+      if (val === 0) return '';
+      let r = '';
+      const d = [Math.floor(val / 1000), Math.floor((val % 1000) / 100), Math.floor((val % 100) / 10), val % 10];
+      for (let i = 0; i < 4; i++) {
+        if (d[i] === 0) continue;
+        r += (d[i] === 1 && i < 3 ? '' : n[d[i]]) + u[3 - i];
+      }
+      return r;
+    };
+
+    // 만(10,000) 단위로 묶어서 처리: "육백칠십일만천육백팔십일"
+    const manPart = Math.floor(num / 10000);
+    const restPart = num % 10000;
+
+    let result = '';
+    if (manPart > 0) {
+      result += (manPart === 1 ? '' : convert4(manPart)) + '만';
+    }
+    if (restPart > 0) {
+      result += convert4(restPart);
+    }
+    return result;
   };
 
   const convertToEnglish = (num: number): string => {
