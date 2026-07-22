@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>숫자놀이</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #g{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;align-content:center;
+     width:min(760px,94vw);margin:0 auto;padding:10px;}
+  a.tile{text-decoration:none;color:#fff;border-radius:24px;padding:30px 10px;font-size:26px;font-weight:800;
+    box-shadow:0 8px 0 #0003,0 12px 24px #0003;display:flex;flex-direction:column;gap:8px;align-items:center;}
+  a.tile .emo{font-size:64px;} a.tile:active{transform:translateY(6px);}
+  .n1{background:linear-gradient(#7cc6ff,#3a9bff);} .n2{background:linear-gradient(#8be78b,#38c66b);} .n3{background:linear-gradient(#ffb36b,#ff7f3a);}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="index.html">🏠 홈</a><span class="title">🔢 숫자놀이</span></div>
+  <div id="g">
+    <a class="tile n1" href="숫자키.html"><span class="emo">🎲</span>숫자키</a>
+    <a class="tile n2" href="계산기.html"><span class="emo">🧮</span>계산기</a>
+    <a class="tile n3" href="계수기.html"><span class="emo">🔟</span>계수기</a>
+  </div>
+<script src="kid.js"></script>
+<script>document.querySelectorAll('a.tile').forEach(function(t){t.addEventListener('click',function(){KID.pop();});});</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>그림판</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #wrap{flex:1;position:relative;margin:0 10px 10px;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px #0003;background:#fff;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;}
+  .swatch{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 4px #0003;cursor:pointer;}
+  .swatch.sel{outline:4px solid #333;}
+  .eraser{background:#fff;border:3px solid #999;position:relative;}
+  .eraser::after{content:"지우개";position:absolute;left:50%;top:110%;transform:translateX(-50%);font-size:10px;color:#555;white-space:nowrap;}
+  .sz{width:34px;height:34px;border-radius:12px;background:#fff;box-shadow:0 2px 4px #0003;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .sz b{background:#333;border-radius:50%;display:block;}
+  #modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:10;}
+  #modal.on{display:flex;}
+  .panel{background:#fff;border-radius:18px;padding:16px;width:min(94vw,640px);max-height:82vh;overflow:auto;}
+  #gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+  #gal figure{margin:0;background:#f4f6fa;border-radius:12px;padding:6px;text-align:center;}
+  #gal img{width:100%;border-radius:8px;cursor:pointer;}
+  #gal .b{display:flex;gap:4px;margin-top:4px;}
+  #gal button{flex:1;border:none;border-radius:8px;padding:6px;font-weight:800;cursor:pointer;}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#233;color:#fff;padding:12px 22px;border-radius:14px;font-size:20px;font-weight:800;opacity:0;transition:opacity .3s;pointer-events:none;}
+  #toast.on{opacity:1;}
+</style>
+</head>
+<body>
+  <div class="topbar" style="flex-wrap:wrap">
+    <a class="home" href="index.html">🏠 홈</a>
+    <span class="title">🎨 그림판</span>
+    <span class="spacer"></span>
+    <span class="swatch sel" style="background:#233" data-c="#233"></span>
+    <span class="swatch" style="background:#e33" data-c="#e33"></span>
+    <span class="swatch" style="background:#ff8c1a" data-c="#ff8c1a"></span>
+    <span class="swatch" style="background:#ffd21a" data-c="#ffd21a"></span>
+    <span class="swatch" style="background:#2ac66b" data-c="#2ac66b"></span>
+    <span class="swatch" style="background:#36a2ff" data-c="#36a2ff"></span>
+    <span class="swatch" style="background:#a25cff" data-c="#a25cff"></span>
+    <span class="swatch" style="background:#ff6bb0" data-c="#ff6bb0"></span>
+    <span class="swatch eraser" data-c="#ffffff"></span>
+    <span class="sz" data-s="6"><b style="width:8px;height:8px"></b></span>
+    <span class="sz" data-s="16"><b style="width:16px;height:16px"></b></span>
+    <span class="sz" data-s="30"><b style="width:26px;height:26px"></b></span>
+    <button class="btn" id="clear">🗑️ 새 종이</button>
+    <button class="btn" id="save" style="background:#8be78b">💾 저장</button>
+    <button class="btn" id="mine" style="background:#ffd76b">📂 내 그림</button>
+  </div>
+  <div id="wrap"><canvas id="cv"></canvas></div>
+  <div id="toast"></div>
+  <div id="modal"><div class="panel"><h2>📂 내 그림</h2><div id="gal"></div></div></div>
+<script src="kid.js"></script>
+<script>
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var color='#233', size=16, drawing=false, lastX=0, lastY=0, currentId=null;
+  function fit(){
+    var r=cv.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    var prev=null; if(cv.width){ prev=document.createElement('canvas'); prev.width=cv.width; prev.height=cv.height; prev.getContext('2d').drawImage(cv,0,0); }
+    cv.width=r.width*dpr; cv.height=r.height*dpr; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,r.width,r.height);
+    if(prev) ctx.drawImage(prev,0,0,prev.width,prev.height,0,0,r.width,r.height);
+    ctx.lineCap='round'; ctx.lineJoin='round';
+  }
+  window.addEventListener('resize',fit); setTimeout(fit,50);
+  function pos(e){ var r=cv.getBoundingClientRect(); var t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+  function down(e){ e.preventDefault(); drawing=true; var p=pos(e); lastX=p.x; lastY=p.y; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(p.x,p.y,size/2,0,7); ctx.fill(); }
+  function move(e){ if(!drawing)return; e.preventDefault(); var p=pos(e);
+    ctx.strokeStyle=color; ctx.lineWidth=size; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; }
+  function up(){ drawing=false; }
+  cv.addEventListener('mousedown',down); cv.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+  cv.addEventListener('touchstart',down,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); window.addEventListener('touchend',up);
+
+  document.querySelectorAll('.swatch').forEach(function(s){
+    s.onclick=function(){ KID.click(); color=s.dataset.c;
+      document.querySelectorAll('.swatch').forEach(function(x){x.classList.remove('sel');}); s.classList.add('sel'); };
+  });
+  document.querySelectorAll('.sz').forEach(function(s){ s.onclick=function(){ KID.click(); size=parseInt(s.dataset.s,10); }; });
+  document.getElementById('clear').onclick=function(){ KID.pop(); currentId=null; var r=cv.getBoundingClientRect(); ctx.fillStyle='#fff'; ctx.fillRect(0,0,r.width,r.height); };
+
+  function toast(t){ var e=document.getElementById('toast'); e.textContent=t; e.classList.add('on'); setTimeout(function(){e.classList.remove('on');},1400); }
+  function getDraws(){ try{ return JSON.parse(localStorage.getItem('draws')||'[]'); }catch(e){ return []; } }
+  function setDraws(a){ try{ localStorage.setItem('draws', JSON.stringify(a.slice(0,12))); }catch(e){ toast('저장공간이 가득 찼어요'); } }
+  // 저장: 원본 해상도 그대로(품질 유지)
+  function snapshot(){ return cv.toDataURL('image/png'); }
+
+  document.getElementById('save').onclick=function(){ var a=getDraws();
+    if(currentId){ a=a.filter(function(x){return x.id!==currentId;}); } else { currentId=Date.now(); }
+    a.unshift({id:currentId, img:snapshot()}); setDraws(a); KID.good(); toast('💾 저장했어요!'); };
+  document.getElementById('mine').onclick=function(){ KID.click(); renderGal(); document.getElementById('modal').classList.add('on'); };
+  document.getElementById('modal').onclick=function(e){ if(e.target.id==='modal') this.classList.remove('on'); };
+  function renderGal(){
+    var a=getDraws(), box=document.getElementById('gal'); box.innerHTML='';
+    if(!a.length){ box.innerHTML='<p style="font-size:18px;color:#888">아직 저장한 그림이 없어요.</p>'; return; }
+    a.forEach(function(d){
+      var fig=document.createElement('figure');
+      var img=document.createElement('img'); img.src=d.img; img.title='불러오기';
+      img.onclick=function(){ KID.pop(); currentId=d.id; var r=cv.getBoundingClientRect(); var im=new Image();
+        im.onload=function(){ ctx.fillStyle='#fff'; ctx.fillRect(0,0,r.width,r.height); ctx.drawImage(im,0,0,r.width,r.height); };
+        im.src=d.img; document.getElementById('modal').classList.remove('on'); toast('불러왔어요!'); };
+      var b=document.createElement('div'); b.className='b';
+      var dl=document.createElement('button'); dl.style.background='#8be78b'; dl.textContent='⬇️';
+      dl.onclick=function(){ var a2=document.createElement('a'); a2.href=d.img; a2.download='그림_'+d.id+'.png'; a2.click(); };
+      var del=document.createElement('button'); del.style.background='#ff9db0'; del.textContent='🗑️';
+      del.onclick=function(){ KID.click(); setDraws(getDraws().filter(function(x){return x.id!==d.id;})); renderGal(); };
+      b.appendChild(dl); b.appendChild(del); fig.appendChild(img); fig.appendChild(b); box.appendChild(fig);
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>메모장</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #ed{flex:1;width:100%;border:none;outline:none;resize:none;background:#ffffffcc;
+    font-size:56px;line-height:1.3;font-weight:800;padding:20px;color:#233;}
+  .swatch{width:32px;height:32px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 4px #0003;cursor:pointer;}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#233;color:#fff;
+    padding:12px 22px;border-radius:14px;font-size:20px;font-weight:800;opacity:0;transition:opacity .3s;pointer-events:none;}
+  #toast.on{opacity:1;}
+  #modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:10;}
+  #modal.on{display:flex;}
+  .panel{background:#fff;border-radius:18px;padding:16px;width:min(94vw,520px);max-height:80vh;overflow:auto;}
+  .panel h2{margin:0 0 10px;}
+  .memo{display:flex;align-items:center;gap:8px;background:#f4f6fa;border-radius:12px;padding:10px;margin-bottom:8px;}
+  .memo .txt{flex:1;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+  .memo .del{background:#ff9db0;border:none;border-radius:10px;padding:8px 12px;font-size:18px;font-weight:800;cursor:pointer;}
+</style>
+</head>
+<body>
+  <div class="topbar" style="flex-wrap:wrap">
+    <a class="home" href="index.html">🏠 홈</a>
+    <span class="title">✏️ 메모장</span>
+    <span class="spacer"></span>
+    <button class="btn" id="big">🔎 크게</button>
+    <button class="btn" id="small">작게</button>
+    <span class="swatch" style="background:#233" data-c="#233"></span>
+    <span class="swatch" style="background:#e33" data-c="#e33"></span>
+    <span class="swatch" style="background:#2a7" data-c="#2a7"></span>
+    <span class="swatch" style="background:#36e" data-c="#36e"></span>
+    <button class="btn" id="save" style="background:#8be78b">💾 저장</button>
+    <button class="btn" id="load" style="background:#ffd76b">📂 불러오기</button>
+    <button class="btn" id="clear">🗑️ 새 종이</button>
+  </div>
+  <textarea id="ed" placeholder="여기에 글자를 써봐요! 🐣" autofocus></textarea>
+  <div id="toast"></div>
+  <div id="modal"><div class="panel"><h2>📂 저장한 메모</h2><div id="list"></div></div></div>
+<script src="kid.js"></script>
+<script>
+  var ed=document.getElementById('ed'), size=56, currentId=null;
+  ed.addEventListener('input',function(){ KID.type(); });
+  document.getElementById('big').onclick=function(){ KID.click(); size=Math.min(140,size+12); ed.style.fontSize=size+'px'; };
+  document.getElementById('small').onclick=function(){ KID.click(); size=Math.max(24,size-12); ed.style.fontSize=size+'px'; };
+  document.getElementById('clear').onclick=function(){ KID.pop(); ed.value=''; currentId=null; ed.focus(); };
+  document.querySelectorAll('.swatch').forEach(function(s){ s.onclick=function(){ KID.click(); ed.style.color=s.dataset.c; ed.focus(); }; });
+
+  function toast(t){ var e=document.getElementById('toast'); e.textContent=t; e.classList.add('on'); setTimeout(function(){e.classList.remove('on');},1400); }
+  function getMemos(){ try{ return JSON.parse(localStorage.getItem('memos')||'[]'); }catch(e){ return []; } }
+  function setMemos(a){ localStorage.setItem('memos', JSON.stringify(a.slice(0,30))); }
+
+  document.getElementById('save').onclick=function(){
+    var t=ed.value.trim(); if(!t){ toast('쓸 내용이 없어요'); return; }
+    var a=getMemos();
+    if(currentId){ a=a.filter(function(x){return x.id!==currentId;}); } else { currentId=Date.now(); }
+    a.unshift({id:currentId, text:ed.value}); setMemos(a);
+    KID.good(); toast('💾 저장했어요!');
+  };
+  document.getElementById('load').onclick=function(){ KID.click(); renderList(); document.getElementById('modal').classList.add('on'); };
+  document.getElementById('modal').onclick=function(e){ if(e.target.id==='modal') this.classList.remove('on'); };
+  function renderList(){
+    var a=getMemos(), box=document.getElementById('list'); box.innerHTML='';
+    if(!a.length){ box.innerHTML='<p style="font-size:18px;color:#888">아직 저장한 게 없어요.</p>'; return; }
+    a.forEach(function(m){
+      var d=document.createElement('div'); d.className='memo';
+      var preview=(m.text.split('\n')[0]||'(빈 메모)').slice(0,20);
+      d.innerHTML='<span class="txt">📝 '+preview+'</span>';
+      var del=document.createElement('button'); del.className='del'; del.textContent='🗑️';
+      d.querySelector('.txt').onclick=function(){ KID.pop(); ed.value=m.text; currentId=m.id; document.getElementById('modal').classList.remove('on'); ed.focus(); toast('불러왔어요!'); };
+      del.onclick=function(){ KID.click(); setMemos(getMemos().filter(function(x){return x.id!==m.id;})); renderList(); };
+      d.appendChild(del); box.appendChild(d);
+    });
+  }
+  ed.focus();
+</script>
+</body>
+</html>

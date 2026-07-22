@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>숫자놀이</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #lv{display:flex;gap:8px;justify-content:center;padding:0 10px 4px;}
+  #lv .btn{font-size:16px;padding:9px 14px;} #lv .btn.on{background:#ffd54a;}
+  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:6px;min-height:0;}
+  #target{font-size:110px;font-weight:800;line-height:1;background:#ffffffcc;border-radius:20px;padding:6px 34px;box-shadow:0 4px 12px #0002;letter-spacing:6px;}
+  #typed{font-size:44px;font-weight:800;min-height:52px;color:#2a7;letter-spacing:6px;}
+  #fb{font-size:30px;height:38px;font-weight:800;}
+  #speak{display:flex;gap:10px;}
+  #speak .btn{font-size:18px;padding:10px 16px;background:#a1c4fd;color:#fff;}
+  #keys{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding-bottom:8px;max-width:520px;}
+  .nkey{width:52px;height:60px;border-radius:12px;background:#fff;box-shadow:0 3px 0 #0002;font-size:26px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;position:relative;border:none;}
+  .nkey:active{transform:translateY(2px);}
+  .nkey.hot{background:#8be78b;box-shadow:0 3px 0 #2a7;}
+  #score{font-size:22px;font-weight:800;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="숫자놀이.html">🏠 숫자놀이</a><span class="title">🔢 숫자키</span>
+    <span class="spacer"></span><span id="score">⭐ 0</span></div>
+  <div id="lv">
+    <button class="btn on" data-n="1">🟢 1자리</button>
+    <button class="btn" data-n="2">🟡 2자리</button>
+    <button class="btn" data-n="3">🔴 3자리</button>
+  </div>
+  <div id="main">
+    <div id="target">3</div>
+    <div id="typed"></div>
+    <div id="fb"></div>
+    <div id="speak">
+      <button class="btn" data-l="ko">🔊 한국어</button>
+      <button class="btn" data-l="en">🔊 English</button>
+    </div>
+    <div id="keys"></div>
+  </div>
+<script src="kid.js"></script>
+<script>
+  var digits=1, target='', typed='', score=0, locked=false;
+  var targetEl=document.getElementById('target'), typedEl=document.getElementById('typed'), fb=document.getElementById('fb');
+  // 숫자키 0~9
+  var keysBox=document.getElementById('keys'), keyEls={};
+  '1234567890'.split('').forEach(function(d){ var b=document.createElement('button'); b.className='nkey'; b.textContent=d;
+    b.onclick=function(){ if(!locked) append(d); }; keyEls[d]=b; keysBox.appendChild(b); });
+
+  function rndNum(){ var lo=digits===1?0:Math.pow(10,digits-1), hi=Math.pow(10,digits)-1; return String(lo+Math.floor(Math.random()*(hi-lo+1))); }
+  function highlight(){ Object.keys(keyEls).forEach(function(k){ keyEls[k].classList.remove('hot'); });
+    var nextD=target[typed.length]; if(nextD && keyEls[nextD]) keyEls[nextD].classList.add('hot'); }
+  function render(){ typedEl.textContent=typed; highlight(); }
+  function next(){ target=rndNum(); typed=''; locked=false; fb.textContent=''; targetEl.textContent=target; render();
+    KID.speak(target,'ko'); }        // 새 숫자를 음성으로 읽어줌
+  function append(d){ if(locked)return; typed+=d; KID.type(); render();
+    if(typed===target){ correct(); }
+    else if(target.indexOf(typed)!==0){ wrong(); } }
+  function correct(){ locked=true; score++; KID.hiSet('numbers',score);
+    document.getElementById('score').innerHTML='⭐ '+score+' &nbsp; 🏆 '+KID.hiGet('numbers');
+    KID.good(); fb.textContent='🎉 정답!'; setTimeout(next,900); }
+  function wrong(){ locked=true; KID.bad(); fb.textContent='❌ 다시!';
+    setTimeout(function(){ typed=''; locked=false; fb.textContent=''; render(); },550); }
+  document.addEventListener('keydown',function(e){
+    if(e.key>='0'&&e.key<='9'){ e.preventDefault(); if(!locked) append(e.key); }
+    else if(e.key==='Backspace'){ e.preventDefault(); if(!locked){ typed=typed.slice(0,-1); render(); } } });
+  document.querySelectorAll('#speak .btn').forEach(function(b){ b.onclick=function(){ KID.speak(target,b.dataset.l); }; });
+  document.querySelectorAll('#lv .btn').forEach(function(b){ b.onclick=function(){ KID.click(); digits=parseInt(b.dataset.n,10);
+    document.querySelectorAll('#lv .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); next(); }; });
+  document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('numbers');
+  next();
+</script>
+</body>
+</html>

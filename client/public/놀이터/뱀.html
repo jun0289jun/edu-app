@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>뱀 게임</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #hud{display:flex;gap:16px;justify-content:center;font-size:20px;font-weight:800;padding:2px;}
+  #wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:6px;}
+  canvas{background:#eafaf0;border-radius:16px;box-shadow:inset 0 0 0 4px #fff,0 6px 18px #0003;touch-action:none;}
+  #pad{display:grid;grid-template-columns:repeat(3,70px);grid-template-rows:repeat(3,70px);gap:8px;justify-content:center;padding:4px 0 10px;}
+  #pad button{font-size:32px;border:none;border-radius:16px;background:#fff;box-shadow:0 4px 0 #0002;}
+  #pad button:active{transform:translateY(3px);}
+  .up{grid-area:1/2;}.left{grid-area:2/1;}.right{grid-area:2/3;}.down{grid-area:3/2;}
+  #over{position:fixed;inset:0;background:#000a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:5;}
+  #over.on{display:flex;} #over .big{font-size:34px;font-weight:800;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="게임.html">🏠 게임</a><span class="title">🐍 뱀 게임</span></div>
+  <div id="hud"><span id="score">🍎 0</span><span id="hi">🏆 0</span></div>
+  <div id="wrap"><canvas id="cv"></canvas></div>
+  <div id="pad">
+    <button class="up" data-d="U">⬆️</button><button class="left" data-d="L">⬅️</button>
+    <button class="right" data-d="R">➡️</button><button class="down" data-d="D">⬇️</button>
+  </div>
+  <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button></div>
+<script src="kid.js"></script>
+<script>
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var S=28, C, R, snake, dir, ndir, food, score, timer, speed;
+  if(!ctx.roundRect){ ctx.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); return this; }; }
+  function sizeBoard(){
+    var wrap=document.getElementById('wrap');
+    var aw=Math.max(280, wrap.clientWidth-8), ah=Math.max(240, wrap.clientHeight-8);
+    var boxW, boxH;                     // 별잡기와 같은 9:7 박스
+    if(aw/ah > 9/7){ boxH=ah; boxW=ah*9/7; } else { boxW=aw; boxH=aw*7/9; }
+    C=Math.max(13, Math.round(boxW/S)); R=Math.max(10, Math.round(boxH/S));
+    cv.width=C*S; cv.height=R*S;
+  }
+  function rndFood(){ var f; do{ f={x:Math.floor(Math.random()*C),y:Math.floor(Math.random()*R)}; }
+    while(snake.some(function(s){return s.x===f.x&&s.y===f.y;})); food=f; }
+  function start(){
+    sizeBoard();
+    var cx=Math.floor(C/2), cy=Math.floor(R/2);
+    snake=[{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy}]; dir={x:1,y:0}; ndir=dir; score=0; speed=430;
+    document.getElementById('over').classList.remove('on');
+    document.getElementById('hi').textContent='🏆 '+KID.hiGet('snake');
+    rndFood(); updHud(); render(); loop();
+  }
+  function updHud(){ document.getElementById('score').textContent='🍎 '+score; }
+  function loop(){ clearInterval(timer); timer=setInterval(step,speed); }
+  function step(){
+    dir=ndir;
+    var h={x:(snake[0].x+dir.x+C)%C, y:(snake[0].y+dir.y+R)%R};
+    if(snake.some(function(s){return s.x===h.x&&s.y===h.y;})){ return gameOver(); }
+    snake.unshift(h);
+    if(h.x===food.x&&h.y===food.y){ score++; KID.star(); updHud(); rndFood(); if(speed>250){ speed-=5; loop(); } }
+    else snake.pop();
+    render();
+  }
+  function render(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.font=(S-4)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🍎',food.x*S+S/2,food.y*S+S/2);
+    snake.forEach(function(s,i){ ctx.fillStyle=(i===0?'#1f8a4c':'#2ecc71');
+      ctx.beginPath(); ctx.roundRect(s.x*S+1,s.y*S+1,S-2,S-2,7); ctx.fill(); });
+    // 머리 눈
+    var hh=snake[0], ex=hh.x*S+S/2, ey=hh.y*S+S/2, ox=dir.x*S*0.16, oy=dir.y*S*0.16, px=dir.y*S*0.22, py=dir.x*S*0.22;
+    [[px,py],[-px,-py]].forEach(function(p){ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ex+ox+p[0],ey+oy+p[1],S*0.12,0,7); ctx.fill();
+      ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(ex+ox+p[0],ey+oy+p[1],S*0.05,0,7); ctx.fill(); });
+  }
+  function gameOver(){ clearInterval(timer); var rec=KID.hiSet('snake',score); KID.fanfare();
+    document.getElementById('ovtxt').innerHTML=(rec?'🏆 신기록!<br>':'')+'🍎 '+score+'개!';
+    document.getElementById('hi').textContent='🏆 '+KID.hiGet('snake'); document.getElementById('over').classList.add('on'); }
+  function turn(d){ var m={U:{x:0,y:-1},D:{x:0,y:1},L:{x:-1,y:0},R:{x:1,y:0}}[d];
+    if(m.x===-dir.x&&m.y===-dir.y) return; ndir=m; }
+  document.addEventListener('keydown',function(e){ var k={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'};
+    if(k[e.key]){ e.preventDefault(); turn(k[e.key]); } });
+  document.querySelectorAll('#pad button').forEach(function(b){ b.addEventListener('click',function(){ turn(b.dataset.d); }); });
+  document.getElementById('again').addEventListener('click',function(){ KID.pop(); start(); });
+  start();
+</script>
+</body>
+</html>

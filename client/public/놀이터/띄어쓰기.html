@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>띄어쓰기</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:10px;}
+  #guide{font-size:19px;font-weight:800;color:#2a7d46;text-align:center;}
+  #disp{font-size:56px;font-weight:800;line-height:1.5;background:#ffffffcc;border-radius:18px;padding:16px 34px;box-shadow:0 4px 12px #0002;min-height:100px;min-width:240px;}
+  #disp .cursor{color:#e07b1a;font-weight:900;animation:bl .6s step-end infinite;}
+  #disp .hintmk{color:#2ac66b;font-weight:900;}
+  #disp .sp{display:inline-block;width:0.5em;border-bottom:5px solid #2ac66b;margin:0 3px;}
+  @keyframes bl{50%{opacity:0.2;}}
+  #fb{font-size:36px;height:46px;}
+  #ctrl{display:flex;gap:10px;align-items:center;}
+  #ctrl button{font-size:24px;font-weight:800;border:none;border-radius:16px;padding:14px 20px;box-shadow:0 4px 0 #0002;}
+  #ctrl .mv{background:#fff;} #space{background:#8be78b;min-width:200px;}
+  #ctrl button:active{transform:translateY(3px);}
+  #score{font-size:22px;font-weight:800;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="글자놀이.html">⬅ 글자놀이</a><span class="title">⎵ 띄어쓰기</span>
+    <span class="spacer"></span><span id="score">⭐ 0</span></div>
+  <div id="main">
+    <div id="guide">⬅️➡️ 로 커서(주황 |)를 낱말 사이로 옮기고<br>[ 스페이스바 ] 로 띄어써요!</div>
+    <div id="disp"></div>
+    <div id="fb"></div>
+    <div id="ctrl">
+      <button class="mv" data-d="-1">⬅️</button>
+      <button id="space">［ 스페이스 ］</button>
+      <button id="hint" style="background:#ffe08a;box-shadow:0 4px 0 #0002;">💡</button>
+      <button class="mv" data-d="1">➡️</button>
+    </div>
+  </div>
+<script src="kid.js"></script>
+<script>
+  var SETS=[['나는','사과를','먹어요'],['오늘은','날씨가','좋아요'],['우리','집에','가자'],
+    ['고양이가','야옹','해요'],['나비가','훨훨','날아요'],['엄마','아빠','사랑해'],['비가','주룩주룩','내려요']];
+  var words=[], text='', correctGaps=[], accepted=[], cursor=1, score=0, locked=false, hintOn=false;
+  var disp=document.getElementById('disp'), fb=document.getElementById('fb');
+  function pick(){ words=SETS[Math.floor(Math.random()*SETS.length)]; text=words.join('');
+    correctGaps=[]; var g=0; for(var i=0;i<words.length-1;i++){ g+=words[i].length; correctGaps.push(g); }
+    accepted=[]; cursor=1; locked=false; fb.textContent=''; render(); }
+  function render(){ var h=''; for(var i=0;i<text.length;i++){
+      if(accepted.indexOf(i)>=0) h+='<span class="sp"></span>';
+      if(hintOn && i===correctGaps[accepted.length]) h+='<span class="hintmk">▾</span>';
+      if(i===cursor) h+='<span class="cursor">|</span>';
+      h+=text[i]; } disp.innerHTML=h; }
+  function move(d){ if(locked)return; cursor=Math.min(text.length-1,Math.max(1,cursor+d)); KID.click(); render(); }
+  function space(){ if(locked)return;
+    if(cursor===correctGaps[accepted.length]){ accepted.push(cursor); KID.pop(); fb.textContent='';
+      if(accepted.length===correctGaps.length){ locked=true; score++; var rec=KID.hiSet('spacing',score);
+        document.getElementById('score').innerHTML='⭐ '+score+' &nbsp; 🏆 '+KID.hiGet('spacing');
+        KID.good(); fb.textContent='🎉 잘했어요!'; setTimeout(pick,1000); } render(); }
+    else { KID.bad(); fb.textContent='❌ 거기가 아니에요!'; setTimeout(function(){ if(!locked) fb.textContent=''; },900); } }
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowLeft'){ e.preventDefault(); move(-1); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); move(1); }
+    else if(e.key===' '||e.code==='Space'){ e.preventDefault(); space(); } });
+  document.querySelectorAll('#ctrl .mv').forEach(function(b){ b.addEventListener('click',function(){ move(parseInt(b.dataset.d,10)); }); });
+  document.getElementById('space').addEventListener('click',space);
+  document.getElementById('hint').addEventListener('click',function(){ if(locked)return; KID.click(); hintOn=true; render(); setTimeout(function(){ hintOn=false; render(); },1800); });
+  document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('spacing');
+  pick();
+</script>
+</body>
+</html>

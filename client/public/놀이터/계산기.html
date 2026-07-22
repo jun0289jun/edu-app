@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>계산기</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #tabs{display:flex;gap:8px;padding:0 10px 6px;}
+  #tabs .btn.on{background:#ffd54a;}
+  .pane{flex:1;display:none;flex-direction:column;align-items:center;padding:6px 10px 14px;min-height:0;overflow:auto;}
+  .pane.on{display:flex;}
+  /* 계산기 (크게) */
+  #disp{width:min(430px,94vw);background:#233;color:#fff;font-size:38px;font-weight:800;text-align:right;
+    border-radius:14px;padding:14px 18px;margin-bottom:10px;min-height:62px;word-break:break-all;}
+  #pad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;width:min(430px,94vw);}
+  #pad button{font-size:26px;font-weight:800;border:none;border-radius:14px;padding:15px 0;background:#fff;box-shadow:0 4px 0 #0002;}
+  #pad button:active{transform:translateY(4px);}
+  #pad .op{background:#ffd08a;} #pad .eq{background:#8be78b;} #pad .cl{background:#ff9db0;}
+  /* 문제 */
+  #qopts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:6px;}
+  #qopts select{font-size:20px;font-weight:800;padding:10px;border-radius:12px;border:3px solid #fff;box-shadow:0 3px 6px #0002;background:#fff;}
+  #q{font-size:64px;font-weight:800;margin:14px;text-shadow:0 2px 0 #fff8;}
+  #ans{font-size:48px;font-weight:800;text-align:center;width:220px;border:none;border-radius:14px;padding:12px;box-shadow:inset 0 0 0 3px #fff;}
+  #fb{font-size:40px;height:52px;margin:8px;}
+  #score{font-size:24px;font-weight:800;}
+  .qbtns{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;justify-content:center;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="숫자놀이.html">🏠 숫자놀이</a><span class="title">🔢 계산기</span></div>
+  <div id="tabs">
+    <button class="btn on" data-t="calc">🧮 계산기</button>
+    <button class="btn" data-t="quiz">❓ 문제풀기</button>
+  </div>
+
+  <div class="pane on" id="calc">
+    <div id="disp">0</div>
+    <div id="pad"></div>
+  </div>
+
+  <div class="pane" id="quiz">
+    <div id="qopts">
+      <select id="lvl"><option value="1">1의 자리</option><option value="2">10의 자리</option><option value="3">100의 자리</option></select>
+      <select id="op"><option value="+">＋ 덧셈</option><option value="-">－ 뺄셈</option><option value="*">✕ 곱셈</option><option value="/">➗ 나눗셈</option><option value="mix">🔀 섞기</option></select>
+    </div>
+    <div id="score">⭐ 0 &nbsp;&nbsp; 🏆 0</div>
+    <div id="q">3 + 2 = ?</div>
+    <input id="ans" type="number" inputmode="numeric" placeholder="?">
+    <div id="fb"></div>
+    <div class="qbtns">
+      <button class="btn eq" id="check" style="background:#8be78b">✅ 확인</button>
+      <button class="btn" id="hint" style="background:#ffd08a">💡 힌트</button>
+      <button class="btn" id="say" style="background:#a1c4fd;color:#fff">🔊</button>
+      <button class="btn" id="next">➡️ 다음</button>
+    </div>
+  </div>
+
+<script src="kid.js"></script>
+<script>
+  document.querySelectorAll('#tabs .btn').forEach(function(b){
+    b.onclick=function(){ KID.click();
+      document.querySelectorAll('#tabs .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on');
+      document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+      document.getElementById(b.dataset.t).classList.add('on'); };
+  });
+
+  // ===== 계산기: 수식+결과 표시 =====
+  var disp=document.getElementById('disp'), expr='', done=false;
+  var keys=['7','8','9','÷','4','5','6','×','1','2','3','-','C','0','=','+'];
+  var pad=document.getElementById('pad');
+  keys.forEach(function(k){ var b=document.createElement('button'); b.textContent=k;
+    if('+-×÷'.indexOf(k)>=0)b.className='op'; if(k==='=')b.className='eq'; if(k==='C')b.className='cl';
+    b.onclick=function(){ press(k); }; pad.appendChild(b); });
+  function show(t){ disp.textContent=t; }
+  function evalExpr(s){
+    var toks=s.replace(/×/g,'*').replace(/÷/g,'/').match(/(\d+\.?\d*|[+\-*/])/g); if(!toks) return 0;
+    var r=parseFloat(toks[0]);
+    for(var i=1;i<toks.length;i+=2){ var o=toks[i], n=parseFloat(toks[i+1]); if(isNaN(n))break;
+      r = o==='+'?r+n : o==='-'?r-n : o==='*'?r*n : (n===0?0:r/n); }
+    return Math.round(r*1000)/1000;
+  }
+  function press(k){
+    if(k==='C'){ KID.pop(); expr=''; done=false; show('0'); return; }
+    KID.click();
+    if('0123456789'.indexOf(k)>=0){ if(done){ expr=''; done=false; } expr+=k; show(expr); return; }
+    if('+-×÷'.indexOf(k)>=0){ if(done){ done=false; } if(expr==='')expr='0'; if('+-×÷'.indexOf(expr.slice(-1))>=0) expr=expr.slice(0,-1); expr+=k; show(expr); return; }
+    if(k==='='){ if(expr===''||'+-×÷'.indexOf(expr.slice(-1))>=0) return; var r=evalExpr(expr); show(expr+'='+r); expr=String(r); done=true; return; }
+  }
+  show('0');
+
+  // ===== 문제풀기 =====
+  var score=0, qans=0, qspeak='';
+  function updScore(){ document.getElementById('score').innerHTML='⭐ '+score+' &nbsp;&nbsp; 🏆 '+KID.hiGet('mathquiz'); }
+  function rng(lvl){ return lvl==='1'?[1,9] : lvl==='2'?[10,99] : [100,999]; }
+  function rnd(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
+  function newQ(){
+    var lvl=document.getElementById('lvl').value;
+    var op=document.getElementById('op').value; if(op==='mix') op='+-*/'[Math.floor(Math.random()*4)];
+    var a,b,r=rng(lvl);
+    if(op==='+'){ a=rnd(r[0],r[1]); b=rnd(r[0],r[1]); qans=a+b; }
+    else if(op==='-'){ a=rnd(r[0],r[1]); b=rnd(r[0],r[1]); if(b>a){var t=a;a=b;b=t;} qans=a-b; }
+    else if(op==='*'){ var m=lvl==='1'?9:lvl==='2'?12:19; a=rnd(2,m); b=rnd(2,9); qans=a*b; }
+    else { var dmax=lvl==='1'?9:lvl==='2'?99:999, tries=0;   // 나눗셈: 나누어 떨어지고 자릿수 제한
+      do { b=rnd(2,9); var c=rnd(2,lvl==='1'?4:lvl==='2'?12:19); } while(b*c>dmax && ++tries<60);
+      if(b*c>dmax){ b=2; c=2; } a=b*c; qans=c; }
+    var sym={'+':'+','-':'−','*':'✕','/':'➗'}[op];
+    var opW={'+':'더하기','-':'빼기','*':'곱하기','/':'나누기'}[op]; qspeak=a+' '+opW+' '+b+'는?';
+    document.getElementById('q').textContent=a+' '+sym+' '+b+' = ?';
+    document.getElementById('ans').value=''; document.getElementById('fb').textContent='';
+    document.getElementById('ans').focus();
+  }
+  function check(){
+    var v=parseInt(document.getElementById('ans').value,10);
+    if(v===qans){ score++; var rec=KID.hiSet('mathquiz',score); KID.good();
+      document.getElementById('fb').textContent=rec?'🏆 신기록!':'🎉 정답!'; updScore(); setTimeout(newQ,900); }
+    else{ KID.bad(); document.getElementById('fb').textContent='🤔 다시!'; }
+  }
+  document.getElementById('check').onclick=check;
+  document.getElementById('hint').onclick=function(){ KID.click(); document.getElementById('fb').textContent='답은 '+qans+' 😉'; };
+  document.getElementById('say').onclick=function(){ KID.speak(qspeak,'ko'); };
+  document.getElementById('next').onclick=function(){ KID.click(); newQ(); };
+  document.getElementById('lvl').onchange=function(){ KID.click(); newQ(); };
+  document.getElementById('op').onchange=function(){ KID.click(); newQ(); };
+  document.getElementById('ans').addEventListener('keydown',function(e){ if(e.key==='Enter') check(); });
+  updScore(); newQ();
+</script>
+</body>
+</html>

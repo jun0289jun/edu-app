@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>따라쓰기</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  body{align-items:center;}
+  #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;width:100%;padding:8px;}
+  #pic{font-size:120px;line-height:1;filter:drop-shadow(0 6px 10px #0003);}
+  #word{font-size:64px;font-weight:800;letter-spacing:4px;background:#ffffffcc;border-radius:18px;padding:10px 26px;box-shadow:0 4px 12px #0002;}
+  #word .ok{color:#22b455;} #word .cur{color:#ff7f3a;text-decoration:underline;} #word .rest{color:#bbb;}
+  #inp{font-size:44px;font-weight:800;text-align:center;width:min(460px,90vw);border:none;border-radius:16px;
+    padding:12px;box-shadow:inset 0 0 0 4px #fff, 0 3px 8px #0002;text-transform:none;}
+  #fb{font-size:44px;height:56px;}
+  #lang{display:flex;gap:8px;}
+  #lang .btn.on{background:#ffd54a;}
+  #score{font-size:22px;font-weight:800;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="글자놀이.html">⬅ 글자놀이</a>
+    <span class="title">✍️ 따라쓰기</span>
+    <span class="spacer"></span>
+    <span id="score">⭐ 0</span>
+    <div id="lang">
+      <button class="btn on" data-l="ko">한글</button>
+      <button class="btn" data-l="mix">🔀</button>
+      <button class="btn" data-l="en">A B C</button>
+    </div>
+  </div>
+  <div id="stage">
+    <div id="pic">🍎</div>
+    <div id="word"></div>
+    <input id="inp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="여기에 따라 써봐요">
+    <div id="fb"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" id="say" style="background:#a1c4fd;color:#fff">🔊 들려줘</button>
+      <button class="btn" id="next" style="background:#8be78b">➡️ 다른 낱말</button>
+    </div>
+  </div>
+<script src="kid.js"></script>
+<script>
+  var WORDS=[
+    ['🍎','사과','apple'],['🐶','강아지','dog'],['🐱','고양이','cat'],['🚗','자동차','car'],
+    ['⭐','별','star'],['🌙','달','moon'],['☀️','해','sun'],['🍌','바나나','banana'],
+    ['🐘','코끼리','elephant'],['🐟','물고기','fish'],['🌷','꽃','flower'],['🍓','딸기','berry'],
+    ['🐰','토끼','rabbit'],['🐻','곰','bear'],['🍉','수박','melon'],['🚌','버스','bus'],
+    ['✈️','비행기','plane'],['🏠','집','house'],['📚','책','book'],['🎈','풍선','balloon'],
+    ['🐸','개구리','frog'],['🐝','벌','bee'],['🍕','피자','pizza'],['🧀','치즈','cheese'],
+    ['🥚','계란','egg'],['🐧','펭귄','penguin'],['🦁','사자','lion'],['🐮','소','cow']
+  ];
+  var lang='ko', target='', cleared=false, curLang='ko';
+  var picEl=document.getElementById('pic'), wordEl=document.getElementById('word'), inp=document.getElementById('inp');
+  var fb=document.getElementById('fb'), score=0;
+
+  function pick(){
+    var w=WORDS[Math.floor(Math.random()*WORDS.length)];
+    picEl.textContent=w[0];
+    var useEn = (lang==='en') || (lang==='mix' && Math.random()<0.5);
+    target = useEn ? w[2] : w[1]; curLang = useEn?'en':'ko';
+    cleared=false; inp.value=''; fb.textContent=''; inp.focus();
+    render(''); KID.speak(target, curLang);
+  }
+  function norm(s){ return s.toLowerCase(); }
+  var LEAD='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', VOWEL='ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+  var TAIL=['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  function decompose(ch){ var c=ch.charCodeAt(0)-0xAC00; if(c<0||c>11171) return [ch];
+    var a=[LEAD[Math.floor(c/588)],VOWEL[Math.floor((c%588)/28)]]; var t=c%28; if(t)a.push(TAIL[t]); return a; }
+  function jamoSeq(s){ var o=[]; for(var i=0;i<s.length;i++){ decompose(s[i]).forEach(function(j){o.push(j);}); } return o; }
+  function isPrefix(inp,tgt){ var a=jamoSeq(inp), b=jamoSeq(tgt); if(a.length>b.length) return false;
+    for(var i=0;i<a.length;i++){ if(a[i]!==b[i]) return false; } return true; }
+  function render(val){
+    var t=target, v=val, html='';
+    for(var i=0;i<t.length;i++){
+      var cls = i<v.length ? (norm(v[i])===norm(t[i])?'ok':'rest')
+                           : (i===v.length?'cur':'rest');
+      html += '<span class="'+cls+'">'+t[i]+'</span>';
+    }
+    wordEl.innerHTML=html;
+  }
+  var locked=false;
+  inp.addEventListener('input',function(){
+    if(locked) return;
+    var v=inp.value; render(v);
+    var targetIsEnglish=/^[a-z]+$/i.test(target);
+    if(!targetIsEnglish && /[a-zA-Z]/.test(v)){ wrongLanguage('한글'); return; }
+    if(targetIsEnglish && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(v)){ wrongLanguage('영어'); return; }
+    var vt=norm(v.trim()), tg=norm(target);
+    if(!cleared && vt===tg){
+      cleared=true; locked=true; score++; var rec=KID.hiSet('trace',score);
+      document.getElementById('score').innerHTML='⭐ '+score+' &nbsp; 🏆 '+KID.hiGet('trace');
+      KID.good(); fb.textContent=rec?'🏆 신기록!':'🎉 잘했어요!';
+      inp.blur(); setTimeout(function(){ locked=false; pick(); },1100); return;
+    }
+    if(v.length) KID.type();
+    if(v && !isPrefix(vt,tg)){ wrong(); }
+  });
+  function wrong(){ if(locked)return; locked=true; KID.bad(); fb.textContent='❌ 다시!';
+    inp.blur(); inp.value='';
+    setTimeout(function(){ inp.value=''; render(''); fb.textContent=''; locked=false; inp.focus(); },550); }
+  function wrongLanguage(lang){ if(locked)return; locked=true; KID.bad();
+    fb.textContent='⌨️ [한/영] 키를 눌러 '+lang+'로 바꿔요!';
+    inp.blur(); inp.value=''; render('');
+    setTimeout(function(){ inp.value=''; render(''); fb.textContent=''; locked=false; inp.focus(); },900); }
+  document.getElementById('next').onclick=function(){ KID.click(); pick(); };
+  document.getElementById('say').onclick=function(){ KID.speak(target, curLang); };
+  document.querySelectorAll('#lang .btn').forEach(function(b){
+    b.onclick=function(){ KID.click(); lang=b.dataset.l;
+      document.querySelectorAll('#lang .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); pick(); };
+  });
+  document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('trace');
+  pick();
+</script>
+</body>
+</html>

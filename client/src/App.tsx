@@ -6,7 +6,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import HomePage from "./pages/HomePage";
 import CounterPage from "./pages/Counter";
-import HangeulDialPage from "./pages/HangeulDial";
 
 
 function Router() {
@@ -17,7 +16,6 @@ function Router() {
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/counter" component={CounterPage} />
-        <Route path="/hangeul" component={HangeulDialPage} />
         <Route path="/404" component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

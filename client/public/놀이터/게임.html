@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>게임</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #g{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;align-content:center;
+     width:min(760px,94vw);margin:0 auto;padding:10px;}
+  a.tile{text-decoration:none;color:#fff;border-radius:24px;padding:30px 10px;font-size:26px;font-weight:800;
+    box-shadow:0 8px 0 #0003,0 12px 24px #0003;display:flex;flex-direction:column;gap:8px;align-items:center;}
+  a.tile .emo{font-size:64px;} a.tile:active{transform:translateY(6px);}
+  .g1{background:linear-gradient(#ffd76b,#ffab3a);} .g2{background:linear-gradient(#8be78b,#38c66b);} .g3{background:linear-gradient(#7cc6ff,#3a9bff);} .g4{background:linear-gradient(#ff9db0,#ff5c85);} .g5{background:linear-gradient(#c79bff,#8f5cff);} .g6{background:linear-gradient(#5ad1c8,#1fb6a6);}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="index.html">🏠 홈</a><span class="title">🎮 게임</span></div>
+  <div id="g">
+    <a class="tile g1" href="별잡기.html"><span class="emo">⭐</span>별잡기</a>
+    <a class="tile g2" href="뱀.html"><span class="emo">🐍</span>뱀 게임</a>
+    <a class="tile g3" href="미로.html"><span class="emo">🌀</span>미로</a>
+    <a class="tile g6" href="한영바구니.html"><span class="emo">🔤</span>한영바구니</a>
+  </div>
+<script src="kid.js"></script>
+<script>document.querySelectorAll('a.tile').forEach(function(t){t.addEventListener('click',function(){KID.pop();});});</script>
+</body>
+</html>

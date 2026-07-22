@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>카메라</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; }
+  body {
+    font-family:"Malgun Gothic","맑은 고딕",sans-serif; color:#222;
+    background:linear-gradient(160deg,#ffe29f,#ffa99f,#a1c4fd);
+    display:flex; flex-direction:column; padding:10px; height:100%; user-select:none;
+  }
+  header { position:relative; text-align:center; margin-bottom:8px; }
+  h1 { font-size:24px; margin:2px 0; text-shadow:0 2px 0 #fff6; }
+  #gear { position:absolute; right:2px; top:-2px; font-size:24px; background:#fff;
+    border:none; border-radius:14px; width:46px; height:46px; cursor:pointer;
+    box-shadow:0 3px 0 #0002; }
+  #gear:active { transform:translateY(2px); }
+  #home { position:absolute; left:2px; top:-2px; font-size:18px; font-weight:800; color:#333; text-decoration:none;
+    background:#fff; border-radius:14px; padding:10px 16px; display:flex; align-items:center;
+    justify-content:center; box-shadow:0 3px 0 #0002; }
+  #home:active { transform:translateY(2px); }
+
+  #app { display:flex; gap:14px; flex:1; min-height:0; }
+  #left { flex:1 1 auto; display:flex; flex-direction:column; min-width:0; gap:10px; }
+  #right { flex:0 0 250px; overflow-y:auto; text-align:left; }
+
+  #stage { position:relative; flex:1; min-height:180px; background:#000;
+    border-radius:20px; overflow:hidden; box-shadow:0 8px 24px #0004; }
+  video,#snap { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    transform:scaleX(-1); filter:url(#colorfix); }
+  #snap { display:none; }
+  .grayscale { filter:url(#colorfix) grayscale(1) !important; }
+  .invert    { filter:url(#colorfix) invert(1) !important; }
+  #msg { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    padding:20px; color:#fff; font-size:17px; line-height:1.6; background:#000a; text-align:center; }
+
+  #bigbtn { font-size:30px; font-weight:800; color:#fff; border:none; border-radius:44px;
+    background:linear-gradient(#ff6b8b,#ff3d6e); padding:16px; box-shadow:0 6px 0 #c72b52,0 10px 20px #0003;
+    cursor:pointer; flex:0 0 auto; }
+  #bigbtn:active { transform:translateY(4px); box-shadow:0 2px 0 #c72b52,0 6px 12px #0003; }
+
+  .card { background:#ffffffcc; border-radius:16px; padding:12px; margin-bottom:12px; }
+  .card h2 { font-size:15px; margin:0 0 8px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .fun { font-size:18px; padding:12px 14px; border:none; border-radius:14px; cursor:pointer;
+    background:#fff; box-shadow:0 3px 0 #0002; font-weight:700; flex:1 1 auto; }
+  .fun:active { transform:translateY(2px); }
+  .fun.on { background:#ffd54a; }
+  #gallery { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  #gallery img { width:100%; border-radius:10px; box-shadow:0 3px 8px #0003; cursor:pointer; }
+  #lightbox{position:fixed;inset:0;background:#000d;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:20;gap:12px;padding:16px;}
+  #lightbox.on{display:flex;}
+  #lightbox img{max-width:94vw;max-height:72vh;border-radius:12px;box-shadow:0 8px 30px #000a;}
+  #lightbox .lb{display:flex;gap:10px;}
+  #lightbox button{font-size:20px;font-weight:800;border:none;border-radius:12px;padding:12px 20px;cursor:pointer;}
+  .hint { font-size:12px; color:#0008; margin-top:6px; }
+
+  /* 설정 모달 */
+  #settings { position:fixed; inset:0; background:#0007; display:none;
+    align-items:center; justify-content:center; z-index:10; }
+  #settings.open { display:flex; }
+  #settings .panel { background:#fff; border-radius:18px; padding:18px 20px; width:min(92vw,380px);
+    box-shadow:0 12px 40px #0006; text-align:left; }
+  #settings h2 { margin:0 0 4px; font-size:19px; }
+  #settings label { display:flex; align-items:center; gap:8px; margin:12px 0; font-size:15px; }
+  #settings input[type=range] { flex:1; }
+  .swatch { width:15px; height:15px; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  .val { width:42px; text-align:right; font-variant-numeric:tabular-nums; }
+
+  @media (max-width:760px){ #app{flex-direction:column;} #right{flex:none;} #stage{min-height:240px;} }
+</style>
+</head>
+<body>
+  <header>
+    <a id="home" href="index.html" title="홈">🏠 홈</a>
+    <h1>카메라</h1>
+    <button id="gear" title="설정">⚙️</button>
+  </header>
+
+  <div id="app">
+    <div id="left">
+      <div id="stage">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="snap"></canvas>
+        <div id="msg">카메라를 켜는 중… 🎥<br>“허용”을 눌러주세요.</div>
+      </div>
+      <button id="bigbtn">📸 찰칵!</button>
+    </div>
+    <div id="right">
+      <div class="card">
+        <h2>🎨 효과</h2>
+        <div class="row">
+          <button class="fun on" data-fx="normal">🙂 보통</button>
+          <button class="fun" data-fx="gray">⚫ 흑백</button>
+          <button class="fun" data-fx="invert">🔮 색반전</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>🖼️ 찍은 사진</h2>
+        <div id="gallery"></div>
+        <div class="hint">사진을 누르면 크게 볼 수 있어요.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 설정 모달 -->
+  <div id="settings">
+    <div class="panel">
+      <h2>⚙️ 색 조정</h2>
+      <div class="hint">여기서 맞춘 값은 자동 저장돼요.</div>
+      <label><span class="swatch" style="background:#e33"></span>빨강
+        <input type="range" id="r" min="0.2" max="3" step="0.05">
+        <span class="val" id="rv"></span></label>
+      <label><span class="swatch" style="background:#3a3"></span>초록
+        <input type="range" id="g" min="0.2" max="3" step="0.05">
+        <span class="val" id="gv"></span></label>
+      <label><span class="swatch" style="background:#36e"></span>파랑
+        <input type="range" id="b" min="0.2" max="3" step="0.05">
+        <span class="val" id="bv"></span></label>
+      <div class="row" style="margin-top:8px">
+        <button class="fun" id="preset-fix">✅ 기본색</button>
+        <button class="fun" id="preset-raw">↩ 원본</button>
+        <button class="fun" id="close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox">
+    <img id="lbimg" src="" alt="">
+    <div class="lb">
+      <button id="lbsave" style="background:#8be78b">💾 저장</button>
+      <button id="lbdel" style="background:#ff9db0">🗑️ 삭제</button>
+      <button id="lbclose" style="background:#fff">닫기</button>
+    </div>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute">
+    <filter id="colorfix" color-interpolation-filters="sRGB">
+      <feColorMatrix id="cm" type="matrix" values="2.15 0 0 0 0  0 0.8 0 0 0  0 0 1.5 0 0  0 0 0 1 0"/>
+    </filter>
+  </svg>
+
+<script>
+(function(){
+  var video=document.getElementById('video'), snap=document.getElementById('snap');
+  var msg=document.getElementById('msg'), cm=document.getElementById('cm');
+  var gallery=document.getElementById('gallery');
+  var stream=null, effect='normal';
+  var DEF={r:2.15,g:0.8,b:1.5};
+
+  // 저장된 값 불러오기 (없으면 기본값)
+  function load(id,def){ var v=parseFloat(localStorage.getItem('cam_'+id)); return isNaN(v)?def:v; }
+  document.getElementById('r').value=load('r',DEF.r);
+  document.getElementById('g').value=load('g',DEF.g);
+  document.getElementById('b').value=load('b',DEF.b);
+
+  function gains(){ return {
+    r:parseFloat(document.getElementById('r').value),
+    g:parseFloat(document.getElementById('g').value),
+    b:parseFloat(document.getElementById('b').value) }; }
+  function applyMatrix(save){
+    var v=gains();
+    document.getElementById('rv').textContent=v.r.toFixed(2);
+    document.getElementById('gv').textContent=v.g.toFixed(2);
+    document.getElementById('bv').textContent=v.b.toFixed(2);
+    cm.setAttribute('values', v.r+' 0 0 0 0  0 '+v.g+' 0 0 0  0 0 '+v.b+' 0 0  0 0 0 1 0');
+    if(save){ localStorage.setItem('cam_r',v.r); localStorage.setItem('cam_g',v.g); localStorage.setItem('cam_b',v.b); }
+  }
+  ['r','g','b'].forEach(function(id){ document.getElementById(id).addEventListener('input',function(){applyMatrix(true);}); });
+  applyMatrix(false);
+
+  // 설정 모달
+  document.getElementById('gear').addEventListener('click',function(){ document.getElementById('settings').classList.add('open'); });
+  document.getElementById('close').addEventListener('click',function(){ document.getElementById('settings').classList.remove('open'); });
+  document.getElementById('settings').addEventListener('click',function(e){ if(e.target.id==='settings') this.classList.remove('open'); });
+  document.getElementById('preset-fix').addEventListener('click',function(){
+    document.getElementById('r').value=DEF.r; document.getElementById('g').value=DEF.g; document.getElementById('b').value=DEF.b; applyMatrix(true);
+  });
+  document.getElementById('preset-raw').addEventListener('click',function(){
+    document.getElementById('r').value=1; document.getElementById('g').value=1; document.getElementById('b').value=1; applyMatrix(true);
+  });
+
+  function showMsg(t){ msg.style.display='flex'; msg.innerHTML=t; }
+  function hideMsg(){ msg.style.display='none'; }
+  async function start(){
+    showMsg('카메라를 켜는 중… 🎥<br>“허용”을 눌러주세요.');
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+      video.srcObject=stream; hideMsg();
+    }catch(e){
+      showMsg('카메라를 열 수 없어요 😢<br><small>'+((e&&e.name)?e.name:e)+
+        '</small><br><small>주소창의 카메라 아이콘에서 “허용”을 선택해 주세요.</small>');
+    }
+  }
+
+  // 효과 버튼
+  document.querySelectorAll('.fun[data-fx]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      effect=btn.dataset.fx;
+      document.querySelectorAll('.fun[data-fx]').forEach(function(b){ b.classList.toggle('on', b===btn); });
+      video.classList.remove('grayscale','invert');
+      if(effect==='gray') video.classList.add('grayscale');
+      if(effect==='invert') video.classList.add('invert');
+    });
+  });
+
+  // 사진 찍기
+  document.getElementById('bigbtn').addEventListener('click',function(){
+    if(!stream) return;
+    var w=video.videoWidth||640, h=video.videoHeight||480;
+    snap.width=w; snap.height=h; var ctx=snap.getContext('2d');
+    ctx.save(); ctx.translate(w,0); ctx.scale(-1,1); ctx.drawImage(video,0,0,w,h); ctx.restore();
+    try{
+      var v=gains(), img=ctx.getImageData(0,0,w,h), d=img.data, i, y;
+      for(i=0;i<d.length;i+=4){
+        d[i]=Math.min(255,d[i]*v.r); d[i+1]=Math.min(255,d[i+1]*v.g); d[i+2]=Math.min(255,d[i+2]*v.b);
+        if(effect==='gray'){ y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; d[i]=d[i+1]=d[i+2]=y; }
+        else if(effect==='invert'){ d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2]; }
+      }
+      ctx.putImageData(img,0,0);
+    }catch(e){}
+    savePhoto(snap.toDataURL('image/jpeg',0.85));
+  });
+  // ==== 앨범 (저장/보기/삭제) ====
+  function getPhotos(){ try{ return JSON.parse(localStorage.getItem('photos')||'[]'); }catch(e){ return []; } }
+  function setPhotos(a){ try{ localStorage.setItem('photos', JSON.stringify(a.slice(0,16))); }catch(e){} }
+  function savePhoto(url){ var a=getPhotos(); a.unshift({id:Date.now(), img:url}); setPhotos(a); renderAlbum(); }
+  function renderAlbum(){ var a=getPhotos(); gallery.innerHTML='';
+    a.forEach(function(p){ var img=document.createElement('img'); img.src=p.img; img.onclick=function(){ openLB(p); }; gallery.appendChild(img); }); }
+  var curLB=null;
+  function openLB(p){ curLB=p; document.getElementById('lbimg').src=p.img; document.getElementById('lightbox').classList.add('on'); }
+  document.getElementById('lbclose').onclick=function(){ document.getElementById('lightbox').classList.remove('on'); };
+  document.getElementById('lightbox').onclick=function(e){ if(e.target.id==='lightbox') this.classList.remove('on'); };
+  document.getElementById('lbsave').onclick=function(){ if(!curLB)return; var a=document.createElement('a'); a.href=curLB.img; a.download='우리사진_'+curLB.id+'.jpg'; a.click(); };
+  document.getElementById('lbdel').onclick=function(){ if(!curLB)return; setPhotos(getPhotos().filter(function(x){return x.id!==curLB.id;})); document.getElementById('lightbox').classList.remove('on'); renderAlbum(); };
+  renderAlbum();
+
+  start();
+})();
+</script>
+</body>
+</html>

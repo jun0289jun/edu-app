@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>지우기</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:10px;}
+  #guide{font-size:20px;font-weight:800;color:#c0392b;}
+  #disp{font-size:72px;font-weight:800;letter-spacing:4px;background:#ffffffcc;border-radius:18px;padding:14px 30px;box-shadow:0 4px 12px #0002;min-height:100px;display:flex;align-items:center;}
+  #disp .ok{color:#233;} #disp .junk{color:#e53935;text-decoration:underline;}
+  #fb{font-size:40px;height:50px;}
+  #bs{font-size:26px;font-weight:800;border:none;border-radius:16px;padding:16px 30px;background:#ffd08a;box-shadow:0 4px 0 #c90;}
+  #bs:active{transform:translateY(3px);}
+  #score{font-size:22px;font-weight:800;}
+  #inp{position:absolute;opacity:0;pointer-events:none;left:-9999px;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="글자놀이.html">⬅ 글자놀이</a><span class="title">⌫ 지우기</span>
+    <span class="spacer"></span><span id="score">⭐ 0</span></div>
+  <div id="main">
+    <div id="guide">빨간 글자를 [ ← Backspace ] 로 지워요!</div>
+    <div id="disp"></div>
+    <div id="fb"></div>
+    <button id="bs">⌫ 지우기</button>
+  </div>
+  <input id="inp" autocomplete="off" spellcheck="false">
+<script src="kid.js"></script>
+<script>
+  var WORDS=['사과','바나나','고양이','강아지','자동차','코끼리','기차','나무','토끼','우유','포도','바다','구름','풍선','로봇','비행기','호랑이','거북이','원숭이','수박'];
+  var JUNK='ㅋㅎㅠㅜㅗ?!가나답떡콩빵쿵';
+  var inp=document.getElementById('inp'), disp=document.getElementById('disp'), fb=document.getElementById('fb');
+  var target='', score=0, locked=false;
+  function genJunk(){ var n=1+Math.floor(Math.random()*3), s=''; for(var i=0;i<n;i++) s+=JUNK[Math.floor(Math.random()*JUNK.length)]; return s; }
+  function pick(){ target=WORDS[Math.floor(Math.random()*WORDS.length)]; inp.value=target+genJunk(); locked=false; fb.textContent=''; render(); inp.focus(); }
+  function render(){ var v=inp.value, h=''; for(var i=0;i<v.length;i++){ var ok=(i<target.length && v[i]===target[i]); h+='<span class="'+(ok?'ok':'junk')+'">'+v[i]+'</span>'; } disp.innerHTML=h; }
+  function del(){ if(locked) return; if(inp.value.length){ inp.value=inp.value.slice(0,-1); afterChange(); } }
+  function afterChange(){
+    render();
+    if(inp.value===target){ locked=true; score++; var rec=KID.hiSet('erase',score);
+      document.getElementById('score').innerHTML='⭐ '+score+' &nbsp; 🏆 '+KID.hiGet('erase');
+      KID.good(); fb.textContent='🎉 깨끗해졌어요!'; setTimeout(pick,1000); }
+    else if(inp.value.length<target.length){ locked=true; KID.bad(); fb.textContent='앗! 너무 많이 지웠어요';
+      setTimeout(function(){ inp.value=target+genJunk(); locked=false; fb.textContent=''; render(); inp.focus(); },900); }
+    else { KID.pop(); }
+  }
+  inp.addEventListener('keydown',function(e){ if(locked || e.key!=='Backspace'){ e.preventDefault(); return; }
+    e.preventDefault(); del(); });
+  document.getElementById('bs').addEventListener('click',del);
+  document.getElementById('main').addEventListener('click',function(){ if(!locked) inp.focus(); });
+  document.body.addEventListener('keydown',function(){ if(!locked) inp.focus(); });
+  document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('erase');
+  pick();
+</script>
+</body>
+</html>

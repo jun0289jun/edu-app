@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>계수기</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #lv{display:flex;gap:8px;justify-content:center;padding:0 10px 4px;}
+  #lv .btn{font-size:16px;padding:9px 14px;} #lv .btn.on{background:#ffd54a;}
+  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:10px;}
+  #num{font-size:120px;font-weight:800;line-height:1;letter-spacing:8px;background:#233;color:#fff;border-radius:20px;padding:14px 40px;box-shadow:0 6px 18px #0003;font-variant-numeric:tabular-nums;}
+  #row{display:flex;gap:16px;align-items:center;}
+  .big{font-size:56px;font-weight:800;border:none;border-radius:24px;width:110px;height:110px;box-shadow:0 6px 0 #0003;}
+  #minus{background:#ff9db0;color:#fff;} #plus{background:#8be78b;color:#fff;}
+  .big:active{transform:translateY(4px);}
+  #tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  #tools .btn{font-size:18px;padding:12px 18px;}
+  .say{background:#a1c4fd;color:#fff;} .rnd{background:#ffd08a;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="숫자놀이.html">🏠 숫자놀이</a><span class="title">🔟 계수기</span></div>
+  <div id="lv">
+    <button class="btn on" data-n="1">1자리</button>
+    <button class="btn" data-n="2">2자리</button>
+    <button class="btn" data-n="3">3자리</button>
+  </div>
+  <div id="main">
+    <div id="num">0</div>
+    <div id="row">
+      <button class="big" id="minus">➖</button>
+      <button class="big" id="plus">➕</button>
+    </div>
+    <div id="tools">
+      <button class="btn rnd" id="rnd">🎲 랜덤</button>
+      <button class="btn" id="zero">0으로</button>
+      <button class="btn say" data-l="ko">🔊 한국어</button>
+      <button class="btn say" data-l="en">🔊 English</button>
+    </div>
+  </div>
+<script src="kid.js"></script>
+<script>
+  var digits=1, count=0;
+  function max(){ return Math.pow(10,digits)-1; }
+  function render(){ document.getElementById('num').textContent = String(count).padStart(digits,'0'); }
+  function set(n,speak){ count=(n+ (max()+1)) % (max()+1); render(); if(speak!==false) KID.speak(count,'ko'); }
+  document.getElementById('plus').onclick=function(){ KID.pop(); set(count+1); };
+  document.getElementById('minus').onclick=function(){ KID.pop(); set(count-1); };
+  document.getElementById('rnd').onclick=function(){ KID.click(); set(Math.floor(Math.random()*(max()+1))); };
+  document.getElementById('zero').onclick=function(){ KID.click(); set(0,false); };
+  document.querySelectorAll('.say').forEach(function(b){ b.onclick=function(){ KID.speak(count,b.dataset.l); }; });
+  document.querySelectorAll('#lv .btn').forEach(function(b){ b.onclick=function(){ KID.click(); digits=parseInt(b.dataset.n,10);
+    document.querySelectorAll('#lv .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); count=0; render(); }; });
+  // 숫자키/화살표로도 조작
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowUp'||e.key==='+'){ e.preventDefault(); set(count+1); }
+    else if(e.key==='ArrowDown'||e.key==='-'){ e.preventDefault(); set(count-1); } });
+  render();
+</script>
+</body>
+</html>

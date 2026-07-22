@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>타자연습</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #levels{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 6px;}
+  #levels .btn{font-size:15px;padding:9px 12px;}
+  #levels .btn.on{background:#ffd54a;}
+  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:6px;min-height:0;}
+  #target{font-size:96px;font-weight:800;line-height:1;background:#ffffffcc;border-radius:20px;padding:6px 30px;box-shadow:0 4px 12px #0002;}
+  #hint{font-size:24px;font-weight:800;color:#d2691e;min-height:30px;}
+  #hint .shift{background:#ff7f3a;color:#fff;border-radius:8px;padding:2px 8px;}
+  #warn{font-size:20px;font-weight:800;min-height:24px;color:#c0392b;}
+  #typed{font-size:34px;font-weight:800;min-height:44px;color:#2a7;}
+  #kb{display:flex;flex-direction:column;gap:5px;align-items:center;padding-bottom:8px;}
+  .krow{display:flex;gap:5px;}
+  .key{width:52px;height:52px;border-radius:10px;background:#fff;box-shadow:0 3px 0 #0002;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;}
+  .key .en{font-size:16px;font-weight:800;color:#333;} .key .ko{font-size:13px;color:#888;}
+  .key.hot{background:#8be78b;box-shadow:0 3px 0 #2a7;} .key.hot2{background:#ffd54a;box-shadow:0 3px 0 #c79a00;}
+  .key .ord{position:absolute;top:-8px;right:-6px;background:#ff3d6e;color:#fff;border-radius:50%;width:22px;height:22px;font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .key.shiftkey{width:96px;font-size:15px;} .key.shiftkey.hot{background:#ff9db0;box-shadow:0 3px 0 #d23;}
+  #score{font-size:22px;font-weight:800;}
+  #inp{position:absolute;opacity:0;pointer-events:none;left:-9999px;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="글자놀이.html">⬅ 글자놀이</a><span class="title">⌨️ 타자연습</span>
+    <span class="spacer"></span><span id="score">⭐ 0</span>
+  </div>
+  <div id="levels"></div>
+  <div id="main">
+    <div id="target">ㄱ</div><div id="hint"></div><div id="warn"></div><div id="typed"></div><div id="kb"></div>
+  </div>
+  <input id="inp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+<script src="kid.js"></script>
+<script>
+  var KEYS=[['q','ㅂ','ㅃ'],['w','ㅈ','ㅉ'],['e','ㄷ','ㄸ'],['r','ㄱ','ㄲ'],['t','ㅅ','ㅆ'],
+    ['y','ㅛ',''],['u','ㅕ',''],['i','ㅑ',''],['o','ㅐ','ㅒ'],['p','ㅔ','ㅖ'],
+    ['a','ㅁ',''],['s','ㄴ',''],['d','ㅇ',''],['f','ㄹ',''],['g','ㅎ',''],
+    ['h','ㅗ',''],['j','ㅓ',''],['k','ㅏ',''],['l','ㅣ',''],
+    ['z','ㅋ',''],['x','ㅌ',''],['c','ㅊ',''],['v','ㅍ',''],['b','ㅠ',''],['n','ㅜ',''],['m','ㅡ','']];
+  var J2K={}; KEYS.forEach(function(k){ J2K[k[1]]={key:k[0],shift:false}; if(k[2])J2K[k[2]]={key:k[0],shift:true}; });
+  var LEAD='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  var VOWEL='ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+  var TAIL=['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  function decompose(ch){ var c=ch.charCodeAt(0)-0xAC00; if(c<0||c>11171) return [ch];
+    var arr=[LEAD[Math.floor(c/588)], VOWEL[Math.floor((c%588)/28)]]; var t=c%28; if(t)arr.push(TAIL[t]); return arr; }
+  function jamoSeq(s){ var out=[]; for(var i=0;i<s.length;i++){ decompose(s[i]).forEach(function(j){out.push(j);}); } return out; }
+  function isPrefix(inp,tgt){ var a=jamoSeq(inp), b=jamoSeq(tgt); if(a.length>b.length) return false;
+    for(var i=0;i<a.length;i++){ if(a[i]!==b[i]) return false; } return true; }
+  function genSyll(){ var L=[0,2,3,5,6,7,9,11,12,14,15,16,17,18], V=[0,2,4,6,8,12,13,17,18,20,1,5], out=[];
+    L.forEach(function(li){ V.forEach(function(vi){ out.push(String.fromCharCode(0xAC00+(li*21+vi)*28)); }); }); return out; }
+  function genSyllTail(){ var L=[0,2,3,5,6,7,9,11,12,14,15,16,17,18], V=[0,2,4,6,8,12,13,17,18,20,1,5], T=[1,4,8,16,17,19,21], out=[];
+    L.forEach(function(li){ V.forEach(function(vi){ T.forEach(function(ti){ out.push(String.fromCharCode(0xAC00+(li*21+vi)*28+ti)); }); }); }); return out; }
+
+  var LEVELS=[
+    ['자음','ko','ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ'.split('')],
+    ['모음','ko','ㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣㅐㅔ'.split('')],
+    ['쌍자음·쌍모음','ko','ㄲㄸㅃㅆㅉㅒㅖ'.split('')],
+    ['글자(받침없음)','ko',genSyll()],
+    ['글자(받침있음)','ko',genSyllTail()],
+    ['ABC 대문자','en','ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')],
+    ['abc 소문자','en','abcdefghijklmnopqrstuvwxyz'.split('')]
+  ];
+
+  var kb=document.getElementById('kb'), rows=['qwertyuiop','asdfghjkl','zxcvbnm'], keyEls={};
+  rows.forEach(function(rw,ri){ var d=document.createElement('div'); d.className='krow';
+    if(ri===2){ var sh=document.createElement('div'); sh.className='key shiftkey'; sh.id='k-shift'; sh.innerHTML='<span class="en">⬆️Shift</span>'; d.appendChild(sh); }
+    rw.split('').forEach(function(ch){ var info=KEYS.filter(function(k){return k[0]===ch;})[0];
+      var e=document.createElement('div'); e.className='key';
+      e.innerHTML='<span class="en">'+ch.toUpperCase()+'</span><span class="ko">'+(info?info[1]:'')+'</span>';
+      keyEls[ch]=e; d.appendChild(e); });
+    kb.appendChild(d); });
+
+  var levelDiv=document.getElementById('levels');
+  LEVELS.forEach(function(lv,i){ var b=document.createElement('button'); b.className='btn'+(i===0?' on':''); b.textContent=lv[0];
+    b.onclick=function(){ KID.click(); setLevel(i);
+      document.querySelectorAll('#levels .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); };
+    levelDiv.appendChild(b); });
+
+  var cur=LEVELS[0], target='', seq=[], score=0, locked=false;
+  var inp=document.getElementById('inp'), warnEl=document.getElementById('warn'), typedEl=document.getElementById('typed');
+  function keysFor(t,type){ if(type==='en'){ var lo=t.toLowerCase(); return [{key:lo,shift:(t!==lo)}]; }
+    if(t.length===1 && J2K[t]) return [J2K[t]];
+    return decompose(t).map(function(j){ return J2K[j]||{key:'?',shift:false}; }); }
+  function highlight(){ Object.keys(keyEls).forEach(function(k){ var e=keyEls[k]; e.className='key'; var o=e.querySelector('.ord'); if(o)o.remove(); });
+    document.getElementById('k-shift').className='key shiftkey'; var anyShift=false;
+    seq.forEach(function(s,idx){ var e=keyEls[s.key]; if(!e)return; e.classList.add(idx===0?'hot':'hot2');
+      if(seq.length>1){ var b=document.createElement('span'); b.className='ord'; b.textContent=(idx+1); e.appendChild(b); }
+      if(s.shift) anyShift=true; });
+    if(anyShift) document.getElementById('k-shift').classList.add('hot'); }
+  function hintText(){ document.getElementById('hint').innerHTML='👉 '+seq.map(function(s){ return (s.shift?'<span class="shift">⬆️Shift</span>+':'')+s.key.toUpperCase(); }).join(' , '); }
+  function next(){ target=cur[2][Math.floor(Math.random()*cur[2].length)]; seq=keysFor(target,cur[1]);
+    document.getElementById('target').textContent=target; typedEl.textContent=''; warnEl.textContent='';
+    inp.value=''; highlight(); hintText(); inp.focus(); }
+  function setLevel(i){ cur=LEVELS[i]; next(); }
+
+  function correct(){ locked=true; score++; KID.hiSet('typing',score);
+    document.getElementById('score').innerHTML='⭐ '+score+' &nbsp; 🏆 '+KID.hiGet('typing');
+    KID.good(); typedEl.textContent='🎉 '+target; inp.blur(); inp.value='';
+    setTimeout(function(){ locked=false; next(); },800); }
+  function wrong(){ if(locked)return; locked=true; KID.bad(); warnEl.textContent='❌ 다시!';
+    typedEl.textContent=''; inp.blur(); inp.value='';
+    setTimeout(function(){ inp.value=''; warnEl.textContent=''; locked=false; inp.focus(); },550); }
+  function wrongLanguage(lang){ if(locked)return; locked=true; KID.bad();
+    warnEl.textContent='⌨️ [한/영] 키를 눌러 '+lang+'로 바꿔요!';
+    typedEl.textContent=''; inp.blur(); inp.value='';
+    setTimeout(function(){ inp.value=''; warnEl.textContent=''; locked=false; inp.focus(); },900); }
+
+  inp.addEventListener('input',function(){
+    if(locked) return;
+    var v=inp.value; typedEl.textContent=v; if(v) KID.type();
+    if(cur[1]==='ko' && /[a-zA-Z]/.test(v)){ wrongLanguage('한글'); return; }
+    if(cur[1]==='en' && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(v)){ wrongLanguage('영어'); return; }
+    if(!v){ return; }
+    if(cur[1]==='en'){ if(v===target) correct(); else wrong(); }
+    else { var vt=v.trim(); if(vt===target) correct(); else if(isPrefix(vt,target)){ /* 진행중 */ } else wrong(); }
+  });
+  document.getElementById('main').addEventListener('click',function(){ if(!locked) inp.focus(); });
+  document.body.addEventListener('keydown',function(){ if(!locked) inp.focus(); });
+
+  document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('typing');
+  setLevel(0);
+</script>
+</body>
+</html>

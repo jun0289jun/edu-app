@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>놀이터</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  body{align-items:center;justify-content:center;text-align:center;}
+  h1{font-size:44px;margin:10px;text-shadow:0 3px 0 #fff8;}
+  #grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;
+    width:min(900px,94vw);padding:10px;}
+  a.tile{text-decoration:none;color:#fff;border-radius:24px;padding:26px 10px;font-size:26px;font-weight:800;
+    box-shadow:0 8px 0 #0003,0 12px 24px #0003;display:flex;flex-direction:column;gap:10px;align-items:center;
+    transition:transform .05s;}
+  a.tile .emo{font-size:64px;}
+  a.tile:active{transform:translateY(6px);box-shadow:0 2px 0 #0003,0 6px 12px #0003;}
+  .c1{background:linear-gradient(#7cc6ff,#3a9bff);}
+  .c2{background:linear-gradient(#ffb36b,#ff7f3a);}
+  .c3{background:linear-gradient(#8be78b,#38c66b);}
+  .c4{background:linear-gradient(#c79bff,#8f5cff);}
+  .c5{background:linear-gradient(#ff8bb0,#ff3d6e);}
+  .c6{background:linear-gradient(#5ad1c8,#1fb6a6);}
+  .c7{background:linear-gradient(#9aa7ff,#5b6cf0);}
+  .c8{background:linear-gradient(#ffb3a0,#ff6f52);}
+  .c9{background:linear-gradient(#a0d8b0,#4bbf7a);}
+  .c10{background:linear-gradient(#8be0d0,#2ac6a0);}
+</style>
+</head>
+<body>
+  <h1>🎈 놀이터</h1>
+  <div id="grid">
+    <a class="tile c1" href="메모장.html"><span class="emo">✏️</span>메모장</a>
+    <a class="tile c2" href="그림판.html"><span class="emo">🎨</span>그림판</a>
+    <a class="tile c3" href="숫자놀이.html"><span class="emo">🔢</span>숫자놀이</a>
+    <a class="tile c4" href="게임.html"><span class="emo">🎮</span>게임</a>
+    <a class="tile c7" href="글자놀이.html"><span class="emo">🏰</span>글자놀이</a>
+    <a class="tile c5" href="카메라.html"><span class="emo">📸</span>카메라</a>
+  </div>
+<script src="kid.js"></script>
+<script>
+  document.querySelectorAll('a.tile').forEach(function(t){
+    t.addEventListener('click',function(){ KID.pop(); });
+  });
+</script>
+</body>
+</html>

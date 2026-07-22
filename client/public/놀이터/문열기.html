@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>문 열기</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #hud{display:flex;gap:16px;justify-content:center;font-size:22px;font-weight:800;padding:2px;}
+  #board{flex:1;position:relative;margin:6px 10px;border-radius:18px;background:
+    repeating-linear-gradient(45deg,#eef2ff,#eef2ff 30px,#e3e9ff 30px,#e3e9ff 60px);
+    box-shadow:inset 0 0 0 4px #fff,0 6px 18px #0003;overflow:hidden;}
+  .sprite{position:absolute;transform:translate(-50%,-50%);transition:left .08s,top .08s;line-height:1;font-size:46px;}
+  #door.glow{filter:drop-shadow(0 0 12px #ffd21a);animation:g .5s infinite alternate;}
+  @keyframes g{to{transform:translate(-50%,-50%) scale(1.15);}}
+  #tip{text-align:center;font-size:18px;font-weight:800;color:#5b6cf0;min-height:24px;}
+  #ctrl{display:flex;gap:10px;justify-content:center;align-items:center;padding:4px 0 10px;}
+  #pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px);gap:6px;}
+  #pad button{font-size:28px;border:none;border-radius:14px;background:#fff;box-shadow:0 4px 0 #0002;}
+  #pad button:active{transform:translateY(3px);}
+  .up{grid-area:1/2;}.left{grid-area:2/1;}.right{grid-area:2/3;}.down{grid-area:3/2;}
+  #enter{width:200px;height:88px;font-size:24px;font-weight:800;border:none;border-radius:18px;background:#cfd8e6;color:#556;box-shadow:0 5px 0 #98a;}
+  #enter.hot{background:linear-gradient(#ffd76b,#ffab3a);color:#fff;box-shadow:0 5px 0 #c77;animation:pulse .5s infinite alternate;}
+  @keyframes pulse{to{transform:scale(1.05);}}
+  #cheer{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:100px;pointer-events:none;opacity:0;z-index:5;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="게임.html">🏠 게임</a><span class="title">🚪 문 열기</span></div>
+  <div id="hud"><span id="score">🚪 0</span><span id="hi">🏆 0</span></div>
+  <div id="board">
+    <div class="sprite" id="door">🚪</div>
+    <div class="sprite" id="hero">🧒</div>
+  </div>
+  <div id="tip">⬅️⬆️➡️⬇️ 로 문 앞까지 가요</div>
+  <div id="ctrl">
+    <div id="pad">
+      <button class="up" data-d="U">⬆️</button><button class="left" data-d="L">⬅️</button>
+      <button class="right" data-d="R">➡️</button><button class="down" data-d="D">⬇️</button>
+    </div>
+    <button id="enter">［ Enter ］ 열기!</button>
+  </div>
+  <div id="cheer">🎉</div>
+<script src="kid.js"></script>
+<script>
+  var COLS=9, ROWS=6, hx=0,hy=0,dx=5,dy=3,score=0;
+  var hero=document.getElementById('hero'), door=document.getElementById('door');
+  function place(el,x,y){ el.style.left=((x+0.5)/COLS*100)+'%'; el.style.top=((y+0.5)/ROWS*100)+'%'; }
+  function draw(){ place(hero,hx,hy); place(door,dx,dy); var at=(hx===dx&&hy===dy);
+    door.classList.toggle('glow',at); document.getElementById('enter').classList.toggle('hot',at);
+    document.getElementById('tip').textContent = at ? '지금! Enter 를 눌러 문을 열어요! 🔑' : '⬅️⬆️➡️⬇️ 로 문 앞까지 가요'; }
+  function newDoor(){ do{ dx=Math.floor(Math.random()*COLS); dy=Math.floor(Math.random()*ROWS); }while(dx===hx&&dy===hy); }
+  function move(d){ if(d==='U'&&hy>0)hy--; else if(d==='D'&&hy<ROWS-1)hy++; else if(d==='L'&&hx>0)hx--; else if(d==='R'&&hx<COLS-1)hx++; else return;
+    KID.click(); draw(); }
+  function open(){ if(hx!==dx||hy!==dy){ KID.click(); return; }
+    score++; document.getElementById('score').textContent='🚪 '+score; KID.fanfare(); KID.hiSet('door',score);
+    document.getElementById('hi').textContent='🏆 '+KID.hiGet('door');
+    var c=document.getElementById('cheer'); c.style.transition='none'; c.style.opacity='1'; c.style.transform='scale(1.4)';
+    setTimeout(function(){ c.style.transition='opacity .7s,transform .7s'; c.style.opacity='0'; c.style.transform='scale(1)'; },30);
+    newDoor(); draw(); }
+  document.addEventListener('keydown',function(e){ var m={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'};
+    if(m[e.key]){ e.preventDefault(); move(m[e.key]); } else if(e.key==='Enter'){ e.preventDefault(); open(); } });
+  document.querySelectorAll('#pad button').forEach(function(b){ b.addEventListener('click',function(){ move(b.dataset.d); }); });
+  document.getElementById('enter').addEventListener('click',open);
+  window.addEventListener('resize',draw);
+  document.getElementById('hi').textContent='🏆 '+KID.hiGet('door');
+  draw();
+</script>
+</body>
+</html>

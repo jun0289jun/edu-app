@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>공받기</title>
+<link rel="stylesheet" href="kid.css">
+<style>
+  #hud{display:flex;gap:16px;justify-content:center;font-size:22px;font-weight:800;padding:2px;}
+  #wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:6px;}
+  canvas{background:linear-gradient(#dff1ff,#eafaf0);border-radius:16px;box-shadow:inset 0 0 0 4px #fff,0 6px 18px #0003;max-width:100%;max-height:100%;touch-action:none;}
+  #tip{text-align:center;font-size:17px;font-weight:800;color:#0b6;min-height:24px;}
+  #ctrl{display:flex;gap:10px;justify-content:center;align-items:center;padding:6px 0 12px;}
+  #ctrl .mv{font-size:34px;width:72px;height:72px;border:none;border-radius:16px;background:#fff;box-shadow:0 4px 0 #0002;}
+  #space{flex:1;max-width:360px;height:72px;font-size:26px;font-weight:800;border:none;border-radius:18px;
+    background:#cfd8e6;color:#556;box-shadow:0 5px 0 #98a;}
+  #space.hot{background:linear-gradient(#8be78b,#38c66b);color:#fff;box-shadow:0 5px 0 #2a7;animation:pulse .5s infinite alternate;}
+  @keyframes pulse{to{transform:scale(1.04);}}
+  button:active{transform:translateY(3px);}
+  #over{position:fixed;inset:0;background:#000a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:5;}
+  #over.on{display:flex;} #over .big{font-size:34px;font-weight:800;}
+</style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="게임.html">🏠 게임</a><span class="title">🧺 공받기</span></div>
+  <div id="hud"><span id="score">⚽ 0</span><span id="life">❤️❤️❤️</span><span id="hi">🏆 0</span></div>
+  <div id="wrap"><canvas id="cv"></canvas></div>
+  <div id="tip">⬅️ ➡️ 로 바구니를 옮기고, 공이 오면 스페이스!</div>
+  <div id="ctrl">
+    <button class="mv" data-d="L">⬅️</button>
+    <button id="space">［ 스페이스 ］ 받기!</button>
+    <button class="mv" data-d="R">➡️</button>
+  </div>
+  <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button></div>
+<script src="kid.js"></script>
+<script>
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var W,H, bx, bw=120, balls, score, lives, spawnT, speed, playing, glow, raf;
+  var EMO=['⚽','🏀','🎾','🍎','🍊','⭐','🍋'];
+  function resize(){ var maxW=Math.min(window.innerWidth-24,760), maxH=window.innerHeight-230;
+    W=Math.max(300,maxW); H=Math.max(240,maxH); cv.width=W; cv.height=H; if(bx===undefined)bx=W/2; bx=Math.min(W-bw/2,Math.max(bw/2,bx)); }
+  window.addEventListener('resize',resize);
+  function start(){
+    resize(); bx=W/2; balls=[]; score=0; lives=3; spawnT=0; speed=1.8; playing=true; glow=false;
+    document.getElementById('over').classList.remove('on');
+    document.getElementById('hi').textContent='🏆 '+KID.hiGet('catch');
+    updHud(); cancelAnimationFrame(raf); loop();
+  }
+  function updHud(){ document.getElementById('score').textContent='⚽ '+score;
+    document.getElementById('life').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives); }
+  var basketY=function(){ return H-46; };
+  function spawn(){ balls.push({x:bw/2+Math.random()*(W-bw), y:-20, e:EMO[Math.floor(Math.random()*EMO.length)], v:speed+Math.random()*0.4}); }
+  function catchable(){ // 잡을 수 있는 공이 있나 (바구니 근처)
+    return balls.some(function(b){ return b.y>basketY()-120 && b.y<basketY()+16 && Math.abs(b.x-bx)<bw/2+26; }); }
+  function grab(){
+    if(!playing) return;
+    var got=0;
+    balls=balls.filter(function(b){
+      if(b.y>basketY()-120 && b.y<basketY()+16 && Math.abs(b.x-bx)<bw/2+26){ got++; return false; } return true; });
+    if(got){ score+=got; KID.star(); if(score%8===0){ speed=Math.min(3.6,speed+0.3); } updHud(); }
+    else { KID.click(); }
+  }
+  function step(){
+    spawnT--; if(spawnT<=0){ spawn(); spawnT=Math.max(75,135-score*1.5); }
+    for(var i=balls.length-1;i>=0;i--){ var b=balls[i]; b.y+=b.v;
+      if(b.y>H-14){ balls.splice(i,1); lives--; KID.bad(); updHud(); if(lives<=0){ return gameOver(); } } }
+    render();
+    if(playing) raf=requestAnimationFrame(step);
+  }
+  function loop(){ raf=requestAnimationFrame(step); }
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    ctx.font='34px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    balls.forEach(function(b){ ctx.fillText(b.e,b.x,b.y); });
+    ctx.font='52px serif'; ctx.fillText('🧺',bx,basketY());
+    // 스페이스 버튼 반짝임
+    var c=catchable();
+    if(c!==glow){ glow=c; document.getElementById('space').classList.toggle('hot',c);
+      document.getElementById('tip').textContent = c ? '지금! 스페이스! ⬇️' : '⬅️ ➡️ 로 바구니를 옮기고, 공이 오면 스페이스!'; }
+  }
+  function gameOver(){ playing=false; cancelAnimationFrame(raf); var rec=KID.hiSet('catch',score); KID.fanfare();
+    document.getElementById('ovtxt').innerHTML=(rec?'🏆 신기록!<br>':'')+'⚽ '+score+'개!';
+    document.getElementById('hi').textContent='🏆 '+KID.hiGet('catch');
+    document.getElementById('space').classList.remove('hot');
+    document.getElementById('over').classList.add('on'); }
+  function moveBasket(dx){ bx=Math.min(W-bw/2,Math.max(bw/2,bx+dx)); }
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowLeft'){ e.preventDefault(); moveBasket(-48); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); moveBasket(48); }
+    else if(e.key===' '||e.code==='Space'){ e.preventDefault(); grab(); }
+  });
+  // 길게 누르면 계속 이동
+  var moveTimer;
+  document.querySelectorAll('#ctrl .mv').forEach(function(btn){
+    function go(){ moveBasket(btn.dataset.d==='L'?-48:48); }
+    btn.addEventListener('mousedown',function(){ go(); moveTimer=setInterval(go,60); });
+    btn.addEventListener('touchstart',function(e){ e.preventDefault(); go(); moveTimer=setInterval(go,60); },{passive:false});
+    ['mouseup','mouseleave','touchend'].forEach(function(ev){ btn.addEventListener(ev,function(){ clearInterval(moveTimer); }); });
+  });
+  document.getElementById('space').addEventListener('click',grab);
+  document.getElementById('again').addEventListener('click',function(){ KID.pop(); start(); });
+  start();
+</script>
+</body>
+</html>
