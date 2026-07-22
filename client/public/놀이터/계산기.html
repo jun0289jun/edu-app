@@ -88,6 +88,18 @@
     if(k==='='){ if(expr===''||'+-×÷'.indexOf(expr.slice(-1))>=0) return; var r=evalExpr(expr); show(expr+'='+r); expr=String(r); done=true; return; }
   }
   show('0');
+  // 키보드 입력(계산기 탭일 때만)
+  document.addEventListener('keydown',function(e){
+    if(!document.getElementById('calc').classList.contains('on')) return;
+    if(e.key>='0'&&e.key<='9'){ e.preventDefault(); press(e.key); }
+    else if(e.key==='+'){ e.preventDefault(); press('+'); }
+    else if(e.key==='-'){ e.preventDefault(); press('-'); }
+    else if(e.key==='*'){ e.preventDefault(); press('×'); }
+    else if(e.key==='/'){ e.preventDefault(); press('÷'); }
+    else if(e.key==='Enter'||e.key==='='){ e.preventDefault(); press('='); }
+    else if(e.key==='Escape'){ e.preventDefault(); press('C'); }
+    else if(e.key==='Backspace'){ e.preventDefault(); if(done){expr='';done=false;} else {expr=expr.slice(0,-1);} show(expr||'0'); }
+  });
 
   // ===== 문제풀기 =====
   var score=0, qans=0, qspeak='';
@@ -105,7 +117,7 @@
       do { b=rnd(2,9); var c=rnd(2,lvl==='1'?4:lvl==='2'?12:19); } while(b*c>dmax && ++tries<60);
       if(b*c>dmax){ b=2; c=2; } a=b*c; qans=c; }
     var sym={'+':'+','-':'−','*':'✕','/':'➗'}[op];
-    var opW={'+':'더하기','-':'빼기','*':'곱하기','/':'나누기'}[op]; qspeak=a+' '+opW+' '+b+'는?';
+    var opW={'+':'더하기','-':'빼기','*':'곱하기','/':'나누기'}[op]; qspeak=KID.numKor(a)+' '+opW+' '+KID.numKor(b)+'는?';
     document.getElementById('q').textContent=a+' '+sym+' '+b+' = ?';
     document.getElementById('ans').value=''; document.getElementById('fb').textContent='';
     document.getElementById('ans').focus();
