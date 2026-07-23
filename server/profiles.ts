@@ -51,13 +51,18 @@ export function registerProfileRoutes(app: Express) {
 
       if (oldName && oldName !== name) {
         // 같은 게임의 새 이름 기록이 이미 있으면 더 높은 점수만 남긴다.
-        await db.execute(
-          "INSERT INTO scores (name, game, avatar, score, ts) " +
-            "SELECT ?, game, ?, score, ts FROM scores WHERE name = ? " +
-            "ON DUPLICATE KEY UPDATE avatar = VALUES(avatar), " +
-            "score = GREATEST(score, VALUES(score)), ts = GREATEST(ts, VALUES(ts))",
-          [name, avatar, oldName]
-        );
+        const oldScores = await db.execute(
+          "SELECT game, score, ts FROM scores WHERE name = ?",
+          [oldName]
+        ) as Array<{ game: string; score: number; ts: number }>;
+        for (const row of oldScores) {
+          await db.execute(
+            "INSERT INTO scores (name, game, avatar, score, ts) VALUES (?, ?, ?, ?, ?) " +
+              "ON DUPLICATE KEY UPDATE avatar = VALUES(avatar), " +
+              "score = GREATEST(score, VALUES(score)), ts = GREATEST(ts, VALUES(ts))",
+            [name, row.game, avatar, row.score, row.ts]
+          );
+        }
         await db.execute("DELETE FROM scores WHERE name = ?", [oldName]);
 
         // 보낸 작품의 작성자 이름과 받은 사람 목록도 함께 이전한다.
