@@ -9,6 +9,12 @@ CREATE TABLE IF NOT EXISTS scores (
   INDEX idx_game_score (game, score)
 );
 
+CREATE TABLE IF NOT EXISTS profiles (
+  name    VARCHAR(16) NOT NULL,
+  avatar  VARCHAR(16) NOT NULL DEFAULT '',
+  PRIMARY KEY (name)
+);
+
 -- 가족 작품 공유: 메모·그림·사진
 CREATE TABLE IF NOT EXISTS works (
   id            VARCHAR(40)   NOT NULL,
