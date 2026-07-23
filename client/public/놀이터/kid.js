@@ -72,7 +72,19 @@ window.KID = (function(){
     GAMES:{ starcatch:['⭐','별잡기'], snake:['🐍','뱀 게임'], maze:['🌀','미로'], kobasket:['🔤','한영바구니'],
             mathquiz:['🧮','계산기'], numbers:['🔢','숫자키'], typing:['⌨️','타자연습'], trace:['✍️','따라쓰기'] },
     profile:function(){ try{ return JSON.parse(localStorage.getItem('kid_profile')||'null'); }catch(e){ return null; } },
-    setProfile:function(name,avatar){ try{ localStorage.setItem('kid_profile',JSON.stringify({name:String(name).slice(0,12),avatar:avatar||'🐥'})); this.flushQueue(); }catch(e){} },
+    profiles:function(){ try{ return JSON.parse(localStorage.getItem('kid_profiles')||'[]'); }catch(e){ return []; } },
+    setProfile:function(name,avatar){ try{
+      name=String(name).slice(0,12); avatar=avatar||'🐥'; var p={name:name,avatar:avatar};
+      localStorage.setItem('kid_profile',JSON.stringify(p));
+      var list=this.profiles(), i=-1; for(var k=0;k<list.length;k++){ if(list[k].name===name){ i=k; break; } }
+      if(i>=0) list[i]=p; else list.push(p);
+      localStorage.setItem('kid_profiles',JSON.stringify(list.slice(0,20)));
+      this.flushQueue();
+    }catch(e){} },
+    removeProfile:function(name){ try{ var list=this.profiles().filter(function(x){return x.name!==name;});
+      localStorage.setItem('kid_profiles',JSON.stringify(list));
+      var cur=this.profile(); if(cur&&cur.name===name) localStorage.removeItem('kid_profile');
+    }catch(e){} },
     // 신기록 시 hiSet에서 자동 호출 (게임 코드 수정 불필요)
     submitScore:function(game,score){
       var p=this.profile(); if(!p||!p.name||!this.LB_URL) return;
