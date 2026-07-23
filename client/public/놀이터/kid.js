@@ -106,6 +106,20 @@ window.KID = (function(){
         .then(function(d){ merge((d&&d.profiles)||[]); }).catch(derive);
       }catch(e){ derive(); } },
     // ===== 가족 작품 공유 =====
+    _saveWorkLocal:function(work){
+      try{
+        var list=JSON.parse(localStorage.getItem('kid_shared_works')||'[]');
+        work.id=work.id||('local-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+        list.unshift(work);
+        localStorage.setItem('kid_shared_works',JSON.stringify(list.slice(0,100)));
+        return true;
+      }catch(e){return false;}
+    },
+    _getWorksLocal:function(profile,type){
+      try{return JSON.parse(localStorage.getItem('kid_shared_works')||'[]').filter(function(w){
+        return w&&w.type===type&&(w.recipients||[]).indexOf(profile)>=0;
+      });}catch(e){return [];}
+    },
     shareWork:function(type,content,title,cb){
       var self=this,p=this.profile(); cb=cb||function(){};
       if(!p||!p.name){ cb(false,'먼저 이름을 골라요!'); return; }
@@ -138,8 +152,8 @@ window.KID = (function(){
           var body={owner:p.name,ownerAvatar:p.avatar||'🐥',type:type,title:title||'',content:content,recipients:recipients,ts:Date.now()};
           try{ fetch(self.WORKS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})
             .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(){self.good();modal.remove();cb(true,'🎁 보냈어요!');})
-            .catch(function(){send.disabled=false;send.textContent='다시 보내기';self.bad();cb(false,'인터넷을 확인해요');}); }
-          catch(e){send.disabled=false;send.textContent='다시 보내기';cb(false,'인터넷을 확인해요');}
+            .catch(function(){if(self._saveWorkLocal(body)){self.good();modal.remove();cb(true,'🎁 보냈어요!');return;}send.disabled=false;send.textContent='다시 보내기';self.bad();cb(false,'저장 공간을 확인해요');}); }
+          catch(e){if(self._saveWorkLocal(body)){self.good();modal.remove();cb(true,'🎁 보냈어요!');return;}send.disabled=false;send.textContent='다시 보내기';cb(false,'저장 공간을 확인해요');}
         };
         actions.appendChild(cancel); actions.appendChild(send); panel.appendChild(grid); panel.appendChild(actions); modal.appendChild(panel);
         modal.onclick=function(e){if(e.target===modal)modal.remove();}; document.body.appendChild(modal);
@@ -148,9 +162,8 @@ window.KID = (function(){
     openInbox:function(type,onOpen,cb){
       var self=this,p=this.profile(); cb=cb||function(){};
       if(!p||!p.name){cb(false,'먼저 이름을 골라요!');return;}
-      try{fetch(this.WORKS_URL+'?profile='+encodeURIComponent(p.name)+'&type='+encodeURIComponent(type))
-        .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){
-          var works=(data.works||[]).filter(function(w){return w.owner!==p.name;});
+      function showInbox(works){
+          works=(works||[]).filter(function(w){return w.owner!==p.name;});
           var old=document.getElementById('kid-inbox-modal');if(old)old.remove();
           var modal=document.createElement('div');modal.id='kid-inbox-modal';modal.style.cssText='position:fixed;inset:0;background:#0009;z-index:999;display:flex;align-items:center;justify-content:center;padding:14px;';
           var panel=document.createElement('div');panel.style.cssText='background:#fff;border-radius:24px;padding:18px;width:min(720px,95vw);max-height:88vh;overflow:auto;box-shadow:0 12px 40px #0006;';
@@ -165,8 +178,11 @@ window.KID = (function(){
           });
           panel.appendChild(grid);modal.appendChild(panel);document.body.appendChild(modal);
           panel.querySelector('#kid-inbox-close').onclick=function(){modal.remove();};modal.onclick=function(e){if(e.target===modal)modal.remove();};cb(true);
-        }).catch(function(){self.bad();cb(false,'받은 작품을 못 불러왔어요');});}
-      catch(e){cb(false,'받은 작품을 못 불러왔어요');}
+      }
+      try{fetch(this.WORKS_URL+'?profile='+encodeURIComponent(p.name)+'&type='+encodeURIComponent(type))
+        .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){showInbox(data.works||[]);})
+        .catch(function(){showInbox(self._getWorksLocal(p.name,type));});}
+      catch(e){showInbox(this._getWorksLocal(p.name,type));}
     },
     // 신기록 시 hiSet에서 자동 호출 (게임 코드 수정 불필요)
     submitScore:function(game,score){
