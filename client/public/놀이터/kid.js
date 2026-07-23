@@ -66,6 +66,7 @@ window.KID = (function(){
     // ▼ Manus가 만든 API 주소를 여기에 넣으세요. 비어있으면 오프라인(로컬 기록만).
     LB_URL:'https://edu-app.manus.space/api/leaderboard',
     PROFILES_URL:'https://edu-app.manus.space/api/profiles',   // 프로필 목록(있으면 사용, 없으면 랭킹에서 유추)
+    WORKS_URL:'https://edu-app.manus.space/api/works',
     // API 규격:
     //  POST 본문(text/plain, JSON): {name, avatar, game, score, ts}  → (name,game)별 '최고점'만 남기고 갱신
     //  GET  응답(JSON): { games: { <게임키>: [ {name,avatar,score}, ... 점수 내림차순 ] , ... } }
@@ -104,6 +105,69 @@ window.KID = (function(){
       try{ fetch(this.PROFILES_URL,{method:'GET'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
         .then(function(d){ merge((d&&d.profiles)||[]); }).catch(derive);
       }catch(e){ derive(); } },
+    // ===== 가족 작품 공유 =====
+    shareWork:function(type,content,title,cb){
+      var self=this,p=this.profile(); cb=cb||function(){};
+      if(!p||!p.name){ cb(false,'먼저 이름을 골라요!'); return; }
+      this.fetchProfiles(function(list){
+        list=(list||[]).filter(function(x){ return x&&x.name&&x.name!==p.name; });
+        if(!list.length){ cb(false,'보낼 친구가 아직 없어요'); return; }
+        var old=document.getElementById('kid-share-modal'); if(old)old.remove();
+        var modal=document.createElement('div'); modal.id='kid-share-modal';
+        modal.style.cssText='position:fixed;inset:0;background:#0009;z-index:999;display:flex;align-items:center;justify-content:center;padding:14px;';
+        var panel=document.createElement('div');
+        panel.style.cssText='background:#fff;border-radius:24px;padding:18px;width:min(540px,95vw);max-height:86vh;overflow:auto;text-align:center;box-shadow:0 12px 40px #0006;';
+        panel.innerHTML='<h2 style="margin:0 0 14px;font-size:28px">🎁 누구에게 보낼까?</h2>';
+        var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;';
+        var chosen={};
+        list.forEach(function(friend){
+          var b=document.createElement('button'); b.type='button';
+          b.style.cssText='border:4px solid transparent;border-radius:18px;background:#f1f5ff;padding:14px 8px;font:800 20px Malgun Gothic;cursor:pointer;';
+          b.innerHTML='<div style="font-size:44px">'+esc(friend.avatar||'🐥')+'</div>'+esc(friend.name);
+          b.onclick=function(){ chosen[friend.name]=!chosen[friend.name]; b.style.borderColor=chosen[friend.name]?'#5b6cf0':'transparent'; self.pop(); };
+          grid.appendChild(b);
+        });
+        var actions=document.createElement('div'); actions.style.cssText='display:flex;gap:10px;margin-top:16px;';
+        var cancel=document.createElement('button'); cancel.textContent='닫기'; cancel.style.cssText='flex:1;border:0;border-radius:16px;padding:14px;font-size:20px;font-weight:800;';
+        var send=document.createElement('button'); send.textContent='🎁 보내기'; send.style.cssText='flex:2;border:0;border-radius:16px;padding:14px;background:#8be78b;font-size:22px;font-weight:800;';
+        cancel.onclick=function(){ modal.remove(); };
+        send.onclick=function(){
+          var recipients=Object.keys(chosen).filter(function(k){return chosen[k];});
+          if(!recipients.length){ send.textContent='친구를 골라요!'; self.bad(); return; }
+          send.disabled=true; send.textContent='보내는 중…';
+          var body={owner:p.name,ownerAvatar:p.avatar||'🐥',type:type,title:title||'',content:content,recipients:recipients,ts:Date.now()};
+          try{ fetch(self.WORKS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})
+            .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(){self.good();modal.remove();cb(true,'🎁 보냈어요!');})
+            .catch(function(){send.disabled=false;send.textContent='다시 보내기';self.bad();cb(false,'인터넷을 확인해요');}); }
+          catch(e){send.disabled=false;send.textContent='다시 보내기';cb(false,'인터넷을 확인해요');}
+        };
+        actions.appendChild(cancel); actions.appendChild(send); panel.appendChild(grid); panel.appendChild(actions); modal.appendChild(panel);
+        modal.onclick=function(e){if(e.target===modal)modal.remove();}; document.body.appendChild(modal);
+      });
+    },
+    openInbox:function(type,onOpen,cb){
+      var self=this,p=this.profile(); cb=cb||function(){};
+      if(!p||!p.name){cb(false,'먼저 이름을 골라요!');return;}
+      try{fetch(this.WORKS_URL+'?profile='+encodeURIComponent(p.name)+'&type='+encodeURIComponent(type))
+        .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){
+          var works=(data.works||[]).filter(function(w){return w.owner!==p.name;});
+          var old=document.getElementById('kid-inbox-modal');if(old)old.remove();
+          var modal=document.createElement('div');modal.id='kid-inbox-modal';modal.style.cssText='position:fixed;inset:0;background:#0009;z-index:999;display:flex;align-items:center;justify-content:center;padding:14px;';
+          var panel=document.createElement('div');panel.style.cssText='background:#fff;border-radius:24px;padding:18px;width:min(720px,95vw);max-height:88vh;overflow:auto;box-shadow:0 12px 40px #0006;';
+          panel.innerHTML='<div style="display:flex;align-items:center"><h2 style="flex:1;margin:0 0 14px;font-size:28px">🎁 받은 작품</h2><button id="kid-inbox-close" style="border:0;border-radius:14px;padding:10px 16px;font-size:18px;font-weight:800">닫기</button></div>';
+          var grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;';
+          if(!works.length)grid.innerHTML='<p style="font-size:20px;font-weight:800;color:#777">아직 받은 작품이 없어요.</p>';
+          works.forEach(function(w){
+            var card=document.createElement('button');card.type='button';card.style.cssText='border:0;border-radius:18px;background:#f4f6fa;padding:10px;text-align:left;overflow:hidden;cursor:pointer;font-family:inherit;';
+            var preview=type==='memo'?'<div style="font-size:19px;font-weight:800;white-space:pre-wrap;max-height:120px;overflow:hidden">'+esc(w.content)+'</div>':'<img alt="" style="width:100%;height:140px;object-fit:contain;background:#fff;border-radius:12px" src="'+esc(w.content)+'">';
+            card.innerHTML=preview+'<div style="margin-top:8px;font-size:17px;font-weight:800">'+esc(w.ownerAvatar||'🐥')+' '+esc(w.owner)+'</div>';
+            card.onclick=function(){self.pop();modal.remove();onOpen(w);};grid.appendChild(card);
+          });
+          panel.appendChild(grid);modal.appendChild(panel);document.body.appendChild(modal);
+          panel.querySelector('#kid-inbox-close').onclick=function(){modal.remove();};modal.onclick=function(e){if(e.target===modal)modal.remove();};cb(true);
+        }).catch(function(){self.bad();cb(false,'받은 작품을 못 불러왔어요');});}
+      catch(e){cb(false,'받은 작품을 못 불러왔어요');}
+    },
     // 신기록 시 hiSet에서 자동 호출 (게임 코드 수정 불필요)
     submitScore:function(game,score){
       var p=this.profile(); if(!p||!p.name||!this.LB_URL) return;
