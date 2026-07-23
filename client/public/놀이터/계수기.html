@@ -80,11 +80,15 @@
       <input id="startnum" type="number" inputmode="numeric" min="0" placeholder="예: 285">
       <button class="btn" id="setstart">적용</button>
     </div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+      <input id="autospeak" type="checkbox" style="width:26px;height:26px;flex:none">
+      숫자 자동 읽기 <span style="font-weight:400;font-size:14px;color:#888">(끄면 아이가 먼저 읽어요)</span>
+    </label>
     <div style="margin-top:16px;text-align:right"><button class="btn" id="close" style="background:#8be78b">닫기</button></div>
   </div></div>
 <script src="kid.js"></script>
 <script>
-  var digits=1, inc=1, count=0, rolling=false;
+  var digits=1, inc=1, count=0, rolling=false, autospeak=false;
   var numEl=document.getElementById('num');
   function max(){ return Math.pow(10,digits)-1; }
 
@@ -96,8 +100,9 @@
   }
   function render(){ paint(); document.getElementById('inclbl').textContent='+'+inc+' 씩'; }
   function bump(){ numEl.classList.remove('bump'); void numEl.offsetWidth; numEl.classList.add('bump'); }
-  function save(){ try{ localStorage.setItem('cnt_count',count); localStorage.setItem('cnt_digits',digits); localStorage.setItem('cnt_inc',inc); }catch(e){} }
-  function set(n,speak){ var m=max()+1; count=((n%m)+m)%m; render(); save(); if(speak!==false) KID.speak(KID.numKor(count),'ko'); }
+  function save(){ try{ localStorage.setItem('cnt_count',count); localStorage.setItem('cnt_digits',digits); localStorage.setItem('cnt_inc',inc); localStorage.setItem('cnt_autospeak',autospeak?'1':'0'); }catch(e){} }
+  // 아이가 먼저 읽도록 자동 음성은 기본 꺼짐(autospeak). 🔊 버튼으로만 확인.
+  function set(n,speak){ var m=max()+1; count=((n%m)+m)%m; render(); save(); if(speak!==false && autospeak) KID.speak(KID.numKor(count),'ko'); }
 
   document.getElementById('plus').onclick=function(){ if(rolling)return; KID.pop(); set(count+inc); };
   document.getElementById('minus').onclick=function(){ if(rolling)return; KID.pop(); set(count-inc); };
@@ -134,6 +139,7 @@
   document.getElementById('setstart').onclick=function(){
     var v=parseInt(document.getElementById('startnum').value,10); if(isNaN(v))return;
     KID.click(); settingsEl.classList.remove('open'); bump(); set(v); };
+  document.getElementById('autospeak').onchange=function(){ autospeak=this.checked; save(); };
 
   // 저장된 상태 복원 (다음날 이어서 세기)
   (function restore(){
@@ -141,7 +147,9 @@
     var si=parseInt(localStorage.getItem('cnt_inc'),10); if(si>=1) inc=si;
     var sc=parseInt(localStorage.getItem('cnt_count'),10); if(!isNaN(sc)) count=sc;
     if(inc>max()) inc=1; if(count>max()) count=max();
+    autospeak=localStorage.getItem('cnt_autospeak')==='1';
     document.getElementById('digits').value=digits;
+    document.getElementById('autospeak').checked=autospeak;
     if(document.querySelector('#inc option[value="'+inc+'"]')) document.getElementById('inc').value=inc;
   })();
   render();
