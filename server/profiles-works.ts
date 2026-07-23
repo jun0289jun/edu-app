@@ -8,7 +8,7 @@
 import type { Express } from "express";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { profiles, works } from "../drizzle/schema";
+import { profiles, works, scores } from "../drizzle/schema";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -42,27 +42,56 @@ export function registerProfilesWorksRoutes(app: Express) {
     }
   });
 
+  // ── DELETE /api/profiles ─────────────────────────────────────────────────────
+  // body (text/plain JSON): { name } OR POST with { action:'delete', name }
+  app.delete("/api/profiles", async (req, res) => {
+    setCors(res);
+    try {
+      let body: { name?: string };
+      try { body = typeof req.body === "string" ? JSON.parse(req.body) : req.body; }
+      catch { res.status(400).json({ ok: false, error: "invalid json" }); return; }
+      const name = String(body.name || "").slice(0, 32).trim();
+      if (!name) { res.status(400).json({ ok: false, error: "name required" }); return; }
+      const db = await getDb();
+      if (!db) { res.json({ ok: true }); return; }
+      await db.delete(profiles).where(eq(profiles.name, name));
+      await db.delete(scores).where(eq(scores.name, name));
+      await db.delete(works).where(eq(works.owner, name));
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("[profiles] DELETE error", e);
+      res.status(500).json({ ok: false, error: "server error" });
+    }
+  });
+
   // ── POST /api/profiles ──────────────────────────────────────────────────────
-  // body (text/plain JSON): { name, avatar, oldName? }
-  // 동작: oldName 있으면 rename(이름 변경), 없으면 upsert
+  // body (text/plain JSON): { name, avatar, oldName? } OR { action:'delete', name }
+  // 동작: action=delete면 삭제, oldName 있으면 rename, 없으면 upsert
   app.post("/api/profiles", async (req, res) => {
     setCors(res);
     try {
-      let body: { name?: string; avatar?: string; oldName?: string };
+            let body: { name?: string; avatar?: string; oldName?: string; action?: string };
       try { body = typeof req.body === "string" ? JSON.parse(req.body) : req.body; }
       catch { res.status(400).json({ ok: false, error: "invalid json" }); return; }
-
       const name = String(body.name || "").slice(0, 32).trim();
       const avatar = String(body.avatar || "🐥").slice(0, 16);
       const oldName = String(body.oldName || "").slice(0, 32).trim();
-
+      const action = String(body.action || "");
       if (!name) { res.status(400).json({ ok: false, error: "name required" }); return; }
-
       const db = await getDb();
       if (!db) { res.json({ ok: true }); return; }
 
+      // kid.js의 deleteProfileServer는 POST로 action:'delete' 전송
+      if (action === "delete") {
+        await db.delete(profiles).where(eq(profiles.name, name));
+        await db.delete(scores).where(eq(scores.name, name));
+        await db.delete(works).where(eq(works.owner, name));
+        res.json({ ok: true });
+        return;
+      }
+
       if (oldName && oldName !== name) {
-        // rename: 기존 행 업데이트
+        // rename: profiles, scores, works 모두 이름 및 아바타 갱신
         await db.update(profiles)
           .set({ name, avatar, updatedAt: new Date() })
           .where(eq(profiles.name, oldName));
@@ -70,6 +99,15 @@ export function registerProfilesWorksRoutes(app: Express) {
         await db.insert(profiles)
           .values({ name, avatar })
           .onDuplicateKeyUpdate({ set: { avatar, updatedAt: new Date() } });
+        // scores 테이블: 이름 업데이트 (기본키 변경은 삭제+삽입)
+        const oldScores = await db.select().from(scores).where(eq(scores.name, oldName));
+        if (oldScores.length > 0) {
+          const s = oldScores[0];
+          await db.insert(scores)
+            .values({ name, avatar, game: s.game, score: s.score, ts: s.ts })
+            .onDuplicateKeyUpdate({ set: { avatar, score: s.score, ts: s.ts } });
+          await db.delete(scores).where(eq(scores.name, oldName));
+        }
         // works 테이블의 owner 이름도 갱신
         await db.update(works)
           .set({ owner: name, ownerAvatar: avatar })
@@ -78,6 +116,8 @@ export function registerProfilesWorksRoutes(app: Express) {
         await db.insert(profiles)
           .values({ name, avatar })
           .onDuplicateKeyUpdate({ set: { avatar, updatedAt: new Date() } });
+        // scores 아바타도 동기화
+        await db.update(scores).set({ avatar }).where(eq(scores.name, name));
       }
       res.json({ ok: true });
     } catch (e) {

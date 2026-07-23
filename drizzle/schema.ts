@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { bigint, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -117,9 +117,25 @@ export const works = mysqlTable("works", {
   title: varchar("title", { length: 128 }).notNull().default(""),
   content: text("content").notNull(),
   recipients: text("recipients").notNull(), // JSON array of names
-  ts: int("ts").notNull(),
+  ts: bigint("ts", { mode: "number" }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type Work = typeof works.$inferSelect;
 export type InsertWork = typeof works.$inferInsert;
+
+/**
+ * 랭킹(scores) 테이블 - leaderboard.ts에서 사용
+ * 테이블은 이미 DB에 존재, 스키마 타입만 선언
+ */
+export const scores = mysqlTable("scores", {
+  name: varchar("name", { length: 32 }).notNull().primaryKey(),
+  avatar: varchar("avatar", { length: 16 }).notNull().default("🐥"),
+  game: varchar("game", { length: 32 }).notNull().default(""),
+  score: int("score").notNull().default(0),
+  ts: bigint("ts", { mode: "number" }).notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Score = typeof scores.$inferSelect;
+export type InsertScore = typeof scores.$inferInsert;
