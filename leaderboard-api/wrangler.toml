@@ -1,0 +1,7 @@
+name = "nolteo-leaderboard"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# DATABASE_URL은 코드/이 파일에 넣지 말 것. 아래 명령으로 시크릿 주입:
+#   wrangler secret put DATABASE_URL

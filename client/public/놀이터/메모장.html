@@ -50,14 +50,15 @@
 
   function toast(t){ var e=document.getElementById('toast'); e.textContent=t; e.classList.add('on'); setTimeout(function(){e.classList.remove('on');},1400); }
   function getMemos(){ try{ return JSON.parse(localStorage.getItem('memos')||'[]'); }catch(e){ return []; } }
-  function setMemos(a){ localStorage.setItem('memos', JSON.stringify(a.slice(0,30))); }
+  function setMemos(a){ try{ localStorage.setItem('memos', JSON.stringify(a.slice(0,30))); return true; }
+    catch(e){ toast('⚠️ 저장이 안 돼요: '+(e&&e.name||'오류')); return false; } }
 
   document.getElementById('save').onclick=function(){
     var t=ed.value.trim(); if(!t){ toast('쓸 내용이 없어요'); return; }
     var a=getMemos();
     if(currentId){ a=a.filter(function(x){return x.id!==currentId;}); } else { currentId=Date.now(); }
-    a.unshift({id:currentId, text:ed.value}); setMemos(a);
-    KID.good(); toast('💾 저장했어요!');
+    a.unshift({id:currentId, text:ed.value});
+    if(setMemos(a)){ KID.good(); toast('💾 저장했어요!'); } else { currentId=null; }
   };
   document.getElementById('load').onclick=function(){ KID.click(); renderList(); document.getElementById('modal').classList.add('on'); };
   document.getElementById('modal').onclick=function(e){ if(e.target.id==='modal') this.classList.remove('on'); };

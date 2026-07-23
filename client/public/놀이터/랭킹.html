@@ -11,7 +11,10 @@
     background:#fff8;border-radius:16px;padding:10px 14px;margin-bottom:12px;}
   #me .av{font-size:34px;} #me a{margin-left:auto;font-size:15px;color:#5b6cf0;text-decoration:none;font-weight:800;}
   .card{background:#fff;border-radius:18px;box-shadow:0 5px 14px #0002;padding:12px 14px;margin-bottom:14px;}
-  .gh{font-size:22px;font-weight:800;margin-bottom:8px;}
+  .gh{font-size:22px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+  .go{margin-left:auto;font-size:16px;color:#fff;background:linear-gradient(#8be78b,#38c66b);
+    text-decoration:none;padding:7px 14px;border-radius:12px;box-shadow:0 3px 0 #0002;white-space:nowrap;}
+  .go:active{transform:translateY(2px);}
   .row{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:800;padding:7px 6px;border-radius:12px;}
   .row+.row{border-top:2px dashed #eee;}
   .row.top1{background:linear-gradient(90deg,#fff6d6,#fff);}
@@ -37,6 +40,9 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function medal(i){ return ['🥇','🥈','🥉'][i]||('<span style="font-size:17px;color:#999">'+(i+1)+'등</span>'); }
   function label(k){ var g=KID.GAMES[k]; return g?(g[0]+' '+g[1]):('🎮 '+esc(k)); }
+  var FILE={starcatch:'별잡기.html',snake:'뱀.html',maze:'미로.html',kobasket:'한영바구니.html',
+            mathquiz:'계산기.html',numbers:'숫자키.html',typing:'타자연습.html',trace:'따라쓰기.html'};
+  function goLink(k){ return FILE[k] ? ('<a class="go" href="'+FILE[k]+'">▶ 하러가기</a>') : ''; }
 
   // 내 프로필 배지
   (function(){ var p=KID.profile();
@@ -52,7 +58,7 @@
     var me=KID.profile(), myName=me&&me.name;
     var html='';
     keys.forEach(function(k){
-      html+='<div class="card"><div class="gh">'+label(k)+'</div>';
+      html+='<div class="card"><div class="gh">'+label(k)+goLink(k)+'</div>';
       games[k].slice(0,5).forEach(function(r,i){
         var mine=(r.name===myName)?' style="outline:3px solid #ffd21a"':'';
         html+='<div class="row'+(i===0?' top1':'')+'"'+mine+'><span class="rk">'+medal(i)+'</span>'+
@@ -67,7 +73,7 @@
   function renderLocal(note){
     var p=KID.profile(), html='';
     Object.keys(KID.GAMES).forEach(function(k){ var s=KID.hiGet(k); if(!s) return;
-      html+='<div class="card"><div class="gh">'+label(k)+'</div><div class="row top1">'+
+      html+='<div class="card"><div class="gh">'+label(k)+goLink(k)+'</div><div class="row top1">'+
             '<span class="rk">🏆</span><span class="av">'+esc((p&&p.avatar)||'🐥')+'</span>'+
             '<span class="nm">'+esc((p&&p.name)||'나')+'</span><span class="sc">'+s+'</span></div></div>';
     });

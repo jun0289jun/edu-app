@@ -1,6 +1,7 @@
 // 공용 소리 (Web Audio, 오프라인/파일 실행 가능)
 window.KID = (function(){
   var ctx;
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function ac(){ try{ if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)(); if(ctx.state==='suspended') ctx.resume(); }catch(e){} return ctx; }
   function tone(freq,dur,type,vol,when){
     try{ var c=ac(); if(!c) return; var t=c.currentTime+(when||0);
@@ -88,7 +89,24 @@ window.KID = (function(){
     fetchRanks:function(cb){ if(!this.LB_URL){ cb(null,'offline'); return; }
       try{ fetch(this.LB_URL,{method:'GET'}).then(function(r){ return r.json(); })
         .then(function(d){ cb(d,null); }).catch(function(){ cb(null,'error'); });
-      }catch(e){ cb(null,'error'); } }
+      }catch(e){ cb(null,'error'); } },
+    // 게임 화면 구석에 그 게임 '1등' 배지 (데이터 있을 때만 표시, 탭하면 랭킹으로)
+    showTop:function(game){
+      this.fetchRanks(function(d,e){
+        if(e||!d||!d.games) return; var arr=d.games[game]; if(!arr||!arr.length) return;
+        if(document.getElementById('kidtop')) return;
+        var t=arr[0], el=document.createElement('div'); el.id='kidtop';
+        el.style.cssText='position:fixed;bottom:10px;left:10px;z-index:30;background:#fff;border-radius:14px;'+
+          'padding:6px 12px;font-size:15px;font-weight:800;box-shadow:0 3px 8px #0004;display:flex;gap:6px;align-items:center;cursor:pointer;opacity:.92;';
+        el.innerHTML='🏆<span style="font-size:19px">'+esc(t.avatar||'🐥')+'</span><span>'+esc(t.name)+'</span><span style="color:#ff7f3a">'+(parseInt(t.score,10)||0)+'</span>';
+        el.onclick=function(){ location.href='랭킹.html'; };
+        document.body.appendChild(el);
+      });
+    }
   };
 })();
 try{ setTimeout(function(){ if(window.KID) KID.flushQueue(); },1200); }catch(e){}
+// 게임 페이지면 파일명으로 자동 인식해 1등 배지 표시(게임 코드 수정 불필요)
+(function(){ var map={'별잡기':'starcatch','뱀':'snake','미로':'maze','한영바구니':'kobasket','계산기':'mathquiz','숫자키':'numbers','타자연습':'typing','따라쓰기':'trace'};
+  try{ var f=decodeURIComponent((location.pathname.split('/').pop()||'')).replace(/\.html$/,''); var g=map[f];
+    if(g) window.addEventListener('load',function(){ try{ if(window.KID) KID.showTop(g); }catch(e){} }); }catch(e){} })();
