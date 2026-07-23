@@ -45,6 +45,8 @@
   .pf .del{margin-left:auto;background:#ffd7de;border:none;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer;}
   #pnew{width:100%;background:#8be78b;color:#fff;}
   #pcreate .row{display:flex;gap:8px;margin-top:12px;}
+  #pguest{width:100%;margin-top:14px;background:transparent;box-shadow:none;border:none;color:#8a8a8a;
+    font-size:16px;font-weight:800;text-decoration:underline;padding:8px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -71,6 +73,7 @@
         <button class="btn" id="psave" style="flex:1">저장 ✅</button>
       </div>
     </div>
+    <button id="pguest">프로필 없이 그냥 놀기 →</button>
   </div></div>
 <script src="kid.js"></script>
 <script>
@@ -89,7 +92,7 @@
     b.onclick=function(){ KID.click(); selAvatar(a); }; avs.appendChild(b); });
   function selAvatar(a){ chosen=a; [].forEach.call(avs.children,function(x){ x.classList.toggle('sel', x.textContent===a); }); }
   function updBadge(){ var p=KID.profile();
-    badge.innerHTML = (p&&p.name) ? ('<span class="av">'+esc(p.avatar)+'</span>'+esc(p.name)) : '<span class="av">👤</span>누구야?'; }
+    badge.innerHTML = (p&&p.name) ? ('<span class="av">'+esc(p.avatar)+'</span>'+esc(p.name)) : '<span class="av">🙂</span>체험 중'; }
 
   function renderList(list){
     plist.innerHTML='';
@@ -116,6 +119,7 @@
   badge.onclick=openPick;
   pnew.onclick=function(){ KID.click(); showCreate(); };
   document.getElementById('pback').onclick=function(){ KID.click(); showList(); };
+  document.getElementById('pguest').onclick=function(){ KID.click(); closePick(); };  // 프로필 없이 체험(점수 랭킹 미반영)
   pick.onclick=function(e){ if(e.target.id==='pick' && KID.profile()) closePick(); };  // 프로필 있을 때만 배경탭 닫기
   document.getElementById('psave').onclick=function(){
     var nm=pname.value.trim(); if(!nm){ pname.focus(); return; }
@@ -124,7 +128,7 @@
   updBadge();
   // 세션 첫 홈 진입이면 '누구야?' 열기 (형제·조카가 고르도록)
   var picked=false; try{ picked=sessionStorage.getItem('kid_picked')==='1'; }catch(e){}
-  if(!KID.profile() || !picked){ setTimeout(openPick,350); }
+  if(!picked){ setTimeout(openPick,350); }   // 이번 세션에 아직 안 골랐으면 '누구야?' 열기(체험 선택 시 재노출 안 함)
 })();
 </script>
 </body>
