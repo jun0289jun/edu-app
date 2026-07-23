@@ -89,9 +89,27 @@ window.KID = (function(){
       var cur=this.profile(); if(cur&&cur.name===name) localStorage.removeItem('kid_profile');
     }catch(e){} },
     // 서버에 프로필 등록(이름·아바타). 실패해도 조용히 넘어감.
-    saveProfileServer:function(name,avatar){ if(!this.PROFILES_URL) return;
+    saveProfileServer:function(name,avatar,oldName,cb){ if(!this.PROFILES_URL){if(cb)cb(false);return;}
       try{ fetch(this.PROFILES_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({name:name,avatar:avatar})}).then(function(){}).catch(function(){}); }catch(e){} },
+        body:JSON.stringify({name:name,avatar:avatar,oldName:oldName||''})})
+        .then(function(r){if(cb)cb(r.ok);}).catch(function(){if(cb)cb(false);}); }catch(e){if(cb)cb(false);} },
+    renameProfile:function(oldName,name,avatar,cb){ try{
+      oldName=String(oldName||'').slice(0,12); name=String(name||'').slice(0,12); avatar=avatar||'🐥';
+      if(!oldName||!name){if(cb)cb(false);return;}
+      var list=this.profiles().filter(function(p){return p.name!==oldName&&p.name!==name;});
+      list.push({name:name,avatar:avatar});
+      localStorage.setItem('kid_profiles',JSON.stringify(list.slice(0,20)));
+      var cur=this.profile(); if(cur&&cur.name===oldName)localStorage.setItem('kid_profile',JSON.stringify({name:name,avatar:avatar}));
+      try{
+        var works=JSON.parse(localStorage.getItem('kid_shared_works')||'[]');
+        works.forEach(function(w){
+          if(w.owner===oldName){w.owner=name;w.ownerAvatar=avatar;}
+          if(Array.isArray(w.recipients))w.recipients=w.recipients.map(function(x){return x===oldName?name:x;});
+        });
+        localStorage.setItem('kid_shared_works',JSON.stringify(works));
+      }catch(e){}
+      this.saveProfileServer(name,avatar,oldName,function(ok){if(cb)cb(ok);});
+    }catch(e){if(cb)cb(false);} },
     // 서버 친구목록 조회. 전용 엔드포인트 없으면 랭킹 데이터에서 유추. 로컬과 병합(이름 dedupe).
     fetchProfiles:function(cb){ var self=this, local=this.profiles();
       function merge(serverList){ var map={}, out=[];
