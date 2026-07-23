@@ -64,7 +64,7 @@ window.KID = (function(){
 
     // ===== 온라인 랭킹 (리더보드) =====
     // ▼ Manus가 만든 API 주소를 여기에 넣으세요. 비어있으면 오프라인(로컬 기록만).
-    LB_URL:'',
+    LB_URL:'https://edu-app.manus.space/api/leaderboard',
     // API 규격:
     //  POST 본문(text/plain, JSON): {name, avatar, game, score, ts}  → (name,game)별 '최고점'만 남기고 갱신
     //  GET  응답(JSON): { games: { <게임키>: [ {name,avatar,score}, ... 점수 내림차순 ] , ... } }
