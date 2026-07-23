@@ -60,8 +60,8 @@
       walls.push(cell(x,y)); if(reachSet()[cell(sx,sy)]){ drawWalls(); return; } else walls.pop(); } }
   function newStar(){ var cells=reachableCells(); if(!cells.length){ walls=[]; drawWalls(); cells=reachableCells(); }
     var e=cells[Math.floor(Math.random()*cells.length)]; sx=e[0]; sy=e[1];
-    // 먼 곳일수록 시간 조금 더
-    starTime=Math.max(1.8, 4.6 - score*0.12); starLeft=starTime; draw(); updBar(); }
+    // 시작은 여유있게, 점수 오를수록 점점 빨라짐(완만하게)
+    starTime=Math.max(1.7, 5.0 - score*0.07); starLeft=starTime; draw(); updBar(); }
   function updHud(){ document.getElementById('score').textContent='⭐ '+score;
     document.getElementById('life').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives); }
   function updBar(){ document.getElementById('fill').style.width=Math.max(0,starLeft/starTime*100)+'%'; }
