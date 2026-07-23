@@ -84,10 +84,15 @@ window.KID = (function(){
       this.saveProfileServer(name,avatar);   // 서버에도 등록 → 다른 기기에서 보임
       this.flushQueue();
     }catch(e){} },
-    removeProfile:function(name){ try{ var list=this.profiles().filter(function(x){return x.name!==name;});
+    removeProfile:function(name,cb){ try{ var list=this.profiles().filter(function(x){return x.name!==name;});
       localStorage.setItem('kid_profiles',JSON.stringify(list));
       var cur=this.profile(); if(cur&&cur.name===name) localStorage.removeItem('kid_profile');
-    }catch(e){} },
+      this.deleteProfileServer(name,cb);   // 서버에서도 삭제(점수·작품 포함)
+    }catch(e){ if(cb)cb(false); } },
+    deleteProfileServer:function(name,cb){ if(!this.PROFILES_URL){ if(cb)cb(false); return; }
+      try{ fetch(this.PROFILES_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'delete',name:name})}).then(function(r){ if(cb)cb(r.ok); }).catch(function(){ if(cb)cb(false); }); }
+      catch(e){ if(cb)cb(false); } },
     // 서버에 프로필 등록(이름·아바타). 실패해도 조용히 넘어감.
     saveProfileServer:function(name,avatar,oldName,cb){ if(!this.PROFILES_URL){if(cb)cb(false);return;}
       try{ fetch(this.PROFILES_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -138,6 +143,26 @@ window.KID = (function(){
         return w&&w.type===type&&(w.recipients||[]).indexOf(profile)>=0;
       });}catch(e){return [];}
     },
+    // 이미지 dataURL을 서버 한도(1.6MB) 아래로 축소·재인코딩. 실패하면 원본 그대로.
+    _compressImage:function(dataURL,cb){
+      try{
+        if(typeof dataURL!=='string' || dataURL.indexOf('data:image')!==0){ cb(dataURL); return; }
+        var img=new Image();
+        img.onload=function(){
+          try{
+            var MAX=1280, w=img.width||MAX, h=img.height||MAX;
+            if(w>MAX||h>MAX){ var s=Math.min(MAX/w,MAX/h); w=Math.round(w*s); h=Math.round(h*s); }
+            var c=document.createElement('canvas'); c.width=w; c.height=h;
+            var cx=c.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,w,h); cx.drawImage(img,0,0,w,h);
+            var q=0.82, out=c.toDataURL('image/jpeg',q), tries=0;
+            while(out.length>1400000 && tries<6){ q=Math.max(0.35,q-0.12); out=c.toDataURL('image/jpeg',q); tries++; }
+            cb(out.length<dataURL.length?out:dataURL);
+          }catch(e){ cb(dataURL); }
+        };
+        img.onerror=function(){ cb(dataURL); };
+        img.src=dataURL;
+      }catch(e){ cb(dataURL); }
+    },
     shareWork:function(type,content,title,cb){
       var self=this,p=this.profile(); cb=cb||function(){};
       if(!p||!p.name){ cb(false,'먼저 이름을 골라요!'); return; }
@@ -167,11 +192,14 @@ window.KID = (function(){
           var recipients=Object.keys(chosen).filter(function(k){return chosen[k];});
           if(!recipients.length){ send.textContent='친구를 골라요!'; self.bad(); return; }
           send.disabled=true; send.textContent='보내는 중…';
-          var body={owner:p.name,ownerAvatar:p.avatar||'🐥',type:type,title:title||'',content:content,recipients:recipients,ts:Date.now()};
-          try{ fetch(self.WORKS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})
-            .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(){self.good();modal.remove();cb(true,'🎁 보냈어요!');})
-            .catch(function(){if(self._saveWorkLocal(body)){self.good();modal.remove();cb(true,'🎁 보냈어요!');return;}send.disabled=false;send.textContent='다시 보내기';self.bad();cb(false,'저장 공간을 확인해요');}); }
-          catch(e){if(self._saveWorkLocal(body)){self.good();modal.remove();cb(true,'🎁 보냈어요!');return;}send.disabled=false;send.textContent='다시 보내기';cb(false,'저장 공간을 확인해요');}
+          function doSend(finalContent){
+            var body={owner:p.name,ownerAvatar:p.avatar||'🐥',type:type,title:title||'',content:finalContent,recipients:recipients,ts:Date.now()};
+            try{ fetch(self.WORKS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})
+              .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(){self.good();modal.remove();cb(true,'🎁 보냈어요!');})
+              .catch(function(){if(self._saveWorkLocal(body)){self.good();modal.remove();cb(true,'🎁 보냈어요!');return;}send.disabled=false;send.textContent='다시 보내기';self.bad();cb(false,'저장 공간을 확인해요');}); }
+            catch(e){if(self._saveWorkLocal(body)){self.good();modal.remove();cb(true,'🎁 보냈어요!');return;}send.disabled=false;send.textContent='다시 보내기';cb(false,'저장 공간을 확인해요');}
+          }
+          if(type==='memo'){ doSend(content); } else { self._compressImage(content,doSend); }  // 사진·그림은 축소 후 전송
         };
         actions.appendChild(cancel); actions.appendChild(send); panel.appendChild(grid); panel.appendChild(actions); modal.appendChild(panel);
         modal.onclick=function(e){if(e.target===modal)modal.remove();}; document.body.appendChild(modal);

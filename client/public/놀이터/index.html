@@ -74,6 +74,7 @@
         <button class="btn" id="pback" style="flex:0 0 auto">⬅</button>
         <button class="btn" id="psave" style="flex:1">저장 ✅</button>
       </div>
+      <button class="btn" id="pdel" style="display:none;width:100%;margin-top:10px;background:#ff9db0;color:#fff">🗑️ 이 프로필 삭제</button>
     </div>
     <button id="pguest">프로필 없이 그냥 놀기 →</button>
   </div></div>
@@ -89,7 +90,7 @@
       avs=document.getElementById('avs'), pname=document.getElementById('pname'),
       plist=document.getElementById('plist'), pcreate=document.getElementById('pcreate'),
       pnew=document.getElementById('pnew'), ptitle=document.getElementById('ptitle'),
-      chosen='🐥', editOld='';
+      pdel=document.getElementById('pdel'), chosen='🐥', editOld='';
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   AV.forEach(function(a){ var b=document.createElement('button'); b.textContent=a;
     b.onclick=function(){ KID.click(); selAvatar(a); }; avs.appendChild(b); });
@@ -119,15 +120,21 @@
     var done=false, to=setTimeout(function(){ if(!done){ done=true; renderList(KID.profiles()); } },4000);
     KID.fetchProfiles(function(list){ if(done)return; done=true; clearTimeout(to); renderList(list); }); }   // 서버 친구목록(어느 기기든 동일)
   function showCreate(){ pcreate.style.display='block'; plist.style.display='none'; pnew.style.display='none';
-    editOld=''; ptitle.textContent='새 친구 만들기'; pname.value=''; selAvatar('🐥'); }
+    editOld=''; ptitle.textContent='새 친구 만들기'; pname.value=''; selAvatar('🐥'); pdel.style.display='none'; }
   function showEdit(p){ pcreate.style.display='block'; plist.style.display='none'; pnew.style.display='none';
-    editOld=p.name; ptitle.textContent='프로필 바꾸기 ✏️'; pname.value=p.name; selAvatar(p.avatar||'🐥'); pname.focus(); }
+    editOld=p.name; ptitle.textContent='프로필 바꾸기 ✏️'; pname.value=p.name; selAvatar(p.avatar||'🐥'); pdel.style.display='block'; pname.focus(); }
   function openPick(){ pick.classList.add('on'); KID.pop(); showList(); }
   function closePick(){ pick.classList.remove('on'); updBadge(); try{ sessionStorage.setItem('kid_picked','1'); }catch(e){} }
 
   badge.onclick=openPick;
   pnew.onclick=function(){ KID.click(); showCreate(); };
   document.getElementById('pback').onclick=function(){ KID.click(); showList(); };
+  pdel.onclick=function(){
+    if(!editOld) return;
+    if(!confirm('"'+editOld+'" 프로필을 지울까요?\n점수와 받은 작품도 함께 사라져요.')) return;
+    KID.click(); pdel.disabled=true; pdel.textContent='지우는 중…';
+    KID.removeProfile(editOld,function(){ pdel.disabled=false; pdel.textContent='🗑️ 이 프로필 삭제'; updBadge(); showList(); });
+  };
   document.getElementById('pguest').onclick=function(){ KID.click(); closePick(); };  // 프로필 없이 체험(점수 랭킹 미반영)
   pick.onclick=function(e){ if(e.target.id==='pick' && KID.profile()) closePick(); };  // 프로필 있을 때만 배경탭 닫기
   document.getElementById('psave').onclick=function(){

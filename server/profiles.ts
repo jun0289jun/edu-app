@@ -39,6 +39,21 @@ export function registerProfileRoutes(app: Express) {
     if (!process.env.DATABASE_URL) return res.status(503).json({ error: "db unavailable" });
     try {
       const data = bodyOf(req);
+
+      // 프로필 삭제: 프로필 + 점수 + 보낸 작품까지 정리
+      if (String(data.action ?? "") === "delete") {
+        const delName = String(data.name ?? "").trim().slice(0, 12);
+        if (!delName) return res.status(400).json({ error: "name required" });
+        const db = connect({ url: process.env.DATABASE_URL });
+        await db.execute(
+          "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '')"
+        );
+        await db.execute("DELETE FROM profiles WHERE name = ?", [delName]);
+        try { await db.execute("DELETE FROM scores WHERE name = ?", [delName]); } catch {}
+        try { await db.execute("DELETE FROM works WHERE owner = ?", [delName]); } catch {}
+        return res.json({ ok: true });
+      }
+
       const name = String(data.name ?? "").trim().slice(0, 12);
       const oldName = String(data.oldName ?? "").trim().slice(0, 12);
       const avatar = String(data.avatar || "🐥").slice(0, 16);
