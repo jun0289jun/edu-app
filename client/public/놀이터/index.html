@@ -77,7 +77,7 @@
     </div>
     <button id="pguest">프로필 없이 그냥 놀기 →</button>
   </div></div>
-<script src="kid.js"></script>
+<script src="kid.js?v=3"></script>
 <script>
 (function(){
   document.querySelectorAll('a.tile').forEach(function(t){
@@ -114,7 +114,10 @@
   function showList(){ editOld=''; ptitle.textContent='누구야? 🙂'; pcreate.style.display='none';
     plist.innerHTML='<div style="text-align:center;color:#999;font-weight:800;padding:16px">불러오는 중… ⏳</div>';
     plist.style.display='flex'; pnew.style.display='none';
-    KID.fetchProfiles(function(list){ renderList(list); }); }   // 서버 친구목록(어느 기기든 동일)
+    // 안전장치: fetchProfiles 없거나(옛 캐시) 응답 늦으면 로컬 목록으로 폴백 → 절대 안 멈춤
+    if(typeof KID.fetchProfiles!=='function'){ renderList(KID.profiles()); return; }
+    var done=false, to=setTimeout(function(){ if(!done){ done=true; renderList(KID.profiles()); } },4000);
+    KID.fetchProfiles(function(list){ if(done)return; done=true; clearTimeout(to); renderList(list); }); }   // 서버 친구목록(어느 기기든 동일)
   function showCreate(){ pcreate.style.display='block'; plist.style.display='none'; pnew.style.display='none';
     editOld=''; ptitle.textContent='새 친구 만들기'; pname.value=''; selAvatar('🐥'); }
   function showEdit(p){ pcreate.style.display='block'; plist.style.display='none'; pnew.style.display='none';
