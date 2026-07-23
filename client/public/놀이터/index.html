@@ -91,23 +91,26 @@
   function updBadge(){ var p=KID.profile();
     badge.innerHTML = (p&&p.name) ? ('<span class="av">'+esc(p.avatar)+'</span>'+esc(p.name)) : '<span class="av">👤</span>누구야?'; }
 
-  function renderList(){
-    var list=KID.profiles(); plist.innerHTML='';
-    list.forEach(function(p){
+  function renderList(list){
+    plist.innerHTML='';
+    (list||[]).forEach(function(p){
       var b=document.createElement('button'); b.className='pf';
       b.innerHTML='<span class="av">'+esc(p.avatar)+'</span><span>'+esc(p.name)+'</span>';
       b.onclick=function(){ KID.setProfile(p.name,p.avatar); KID.good(); closePick(); };
-      var del=document.createElement('span'); del.className='del'; del.textContent='🗑️';
-      del.onclick=function(ev){ ev.stopPropagation(); KID.removeProfile(p.name); showList(); };
-      b.appendChild(del); plist.appendChild(b);
+      plist.appendChild(b);
     });
-    plist.style.display=list.length?'flex':'none';
-    pnew.style.display=list.length?'block':'none';
+    var has=list&&list.length;
+    plist.style.display=has?'flex':'none';
+    pnew.style.display=has?'block':'none';
+    if(!has) showCreate();
   }
-  function showList(){ pcreate.style.display='none'; renderList(); if(!KID.profiles().length) showCreate(); }
+  function showList(){ pcreate.style.display='none';
+    plist.innerHTML='<div style="text-align:center;color:#999;font-weight:800;padding:16px">불러오는 중… ⏳</div>';
+    plist.style.display='flex'; pnew.style.display='none';
+    KID.fetchProfiles(function(list){ renderList(list); }); }   // 서버 친구목록(어느 기기든 동일)
   function showCreate(){ pcreate.style.display='block'; plist.style.display='none'; pnew.style.display='none';
     pname.value=''; selAvatar('🐥'); }
-  function openPick(){ showList(); pick.classList.add('on'); KID.pop(); }
+  function openPick(){ pick.classList.add('on'); KID.pop(); showList(); }
   function closePick(){ pick.classList.remove('on'); updBadge(); try{ sessionStorage.setItem('kid_picked','1'); }catch(e){} }
 
   badge.onclick=openPick;

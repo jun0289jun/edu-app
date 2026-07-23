@@ -60,4 +60,18 @@ Access-Control-Allow-Origin: *
 - 완료 후 **엔드포인트 URL** 회신 → 클라이언트 `kid.js`의 `LB_URL`에 반영하면 즉시 동작.
 
 ---
-클라이언트 관련 파일: `client/public/놀이터/kid.js`(전송·조회 로직), `랭킹.html`(랭킹 화면), `index.html`(프로필 선택).
+
+## (선택) 프로필 API — 기기 간 프로필 공유
+프로필(이름·아바타)을 서버에 두면, 다른 기기·브라우저에서도 "누구야?" 화면에서 골라 쓸 수 있습니다.
+※ 이 엔드포인트가 **없어도** 클라이언트는 **랭킹 데이터에서 친구 목록을 유추**해 동작합니다(점수가 있는 아이만 보임).
+   아래를 만들면 **점수가 없는 새 프로필도** 모든 기기에서 보입니다.
+
+- **`GET {base}/api/profiles`** → `{ "profiles": [ {"name":"하준","avatar":"🦊"}, ... ] }`
+- **`POST {base}/api/profiles`** (Content-Type: text/plain, body JSON `{name, avatar}`) → 이름 기준 upsert(아바타 갱신). 응답 200.
+- CORS: `Access-Control-Allow-Origin: *` (레인지 API와 동일). name 최대 12자.
+- 테이블 예: `CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '');`
+
+클라이언트는 `kid.js`의 `PROFILES_URL`(기본 `.../api/profiles`)로 호출합니다.
+
+---
+클라이언트 관련 파일: `client/public/놀이터/kid.js`(전송·조회·프로필 로직), `랭킹.html`(랭킹 화면), `index.html`(프로필 선택/생성).
