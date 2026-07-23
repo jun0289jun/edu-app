@@ -46,6 +46,7 @@
     <button class="btn" id="clear">🗑️ 새 종이</button>
     <button class="btn" id="save" style="background:#8be78b">💾 저장</button>
     <button class="btn" id="mine" style="background:#ffd76b">📂 내 그림</button>
+    <button class="btn" id="inbox" style="background:#9ed8ff">🎁 받은 그림</button>
   </div>
   <div id="wrap"><canvas id="cv"></canvas></div>
   <div id="toast"></div>
@@ -84,11 +85,22 @@
   function setDraws(a){ try{ localStorage.setItem('draws', JSON.stringify(a.slice(0,12))); }catch(e){ toast('저장공간이 가득 찼어요'); } }
   // 저장: 원본 해상도 그대로(품질 유지)
   function snapshot(){ return cv.toDataURL('image/png'); }
+  function shareImage(url){
+    var im=new Image(); im.onload=function(){
+      var maxW=900,maxH=650,scale=Math.min(1,maxW/im.width,maxH/im.height);
+      var out=document.createElement('canvas'); out.width=Math.max(1,Math.round(im.width*scale)); out.height=Math.max(1,Math.round(im.height*scale));
+      out.getContext('2d').drawImage(im,0,0,out.width,out.height);
+      KID.shareWork('drawing',out.toDataURL('image/jpeg',0.78),'내 그림',function(ok,msg){toast(msg);});
+    }; im.src=url;
+  }
 
   document.getElementById('save').onclick=function(){ var a=getDraws();
     if(currentId){ a=a.filter(function(x){return x.id!==currentId;}); } else { currentId=Date.now(); }
     a.unshift({id:currentId, img:snapshot()}); setDraws(a); KID.good(); toast('💾 저장했어요!'); };
   document.getElementById('mine').onclick=function(){ KID.click(); renderGal(); document.getElementById('modal').classList.add('on'); };
+  document.getElementById('inbox').onclick=function(){ KID.openInbox('drawing',function(w){
+    var r=cv.getBoundingClientRect(),im=new Image(); im.onload=function(){ctx.fillStyle='#fff';ctx.fillRect(0,0,r.width,r.height);ctx.drawImage(im,0,0,r.width,r.height);currentId=null;toast('🎁 '+w.owner+'의 그림이에요');}; im.src=w.content;
+  },function(ok,msg){if(!ok)toast(msg);}); };
   document.getElementById('modal').onclick=function(e){ if(e.target.id==='modal') this.classList.remove('on'); };
   function renderGal(){
     var a=getDraws(), box=document.getElementById('gal'); box.innerHTML='';
@@ -102,9 +114,11 @@
       var b=document.createElement('div'); b.className='b';
       var dl=document.createElement('button'); dl.style.background='#8be78b'; dl.textContent='⬇️';
       dl.onclick=function(){ var a2=document.createElement('a'); a2.href=d.img; a2.download='그림_'+d.id+'.png'; a2.click(); };
+      var gift=document.createElement('button'); gift.style.background='#c79bff'; gift.textContent='🎁';
+      gift.onclick=function(){ shareImage(d.img); };
       var del=document.createElement('button'); del.style.background='#ff9db0'; del.textContent='🗑️';
       del.onclick=function(){ KID.click(); setDraws(getDraws().filter(function(x){return x.id!==d.id;})); renderGal(); };
-      b.appendChild(dl); b.appendChild(del); fig.appendChild(img); fig.appendChild(b); box.appendChild(fig);
+      b.appendChild(dl); b.appendChild(gift); b.appendChild(del); fig.appendChild(img); fig.appendChild(b); box.appendChild(fig);
     });
   }
 })();

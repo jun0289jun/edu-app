@@ -34,6 +34,8 @@
     <span class="swatch" style="background:#36e" data-c="#36e"></span>
     <button class="btn" id="save" style="background:#8be78b">💾 저장</button>
     <button class="btn" id="load" style="background:#ffd76b">📂 불러오기</button>
+    <button class="btn" id="share" style="background:#c79bff">🎁 보내기</button>
+    <button class="btn" id="inbox" style="background:#9ed8ff">🎁 받은 글</button>
     <button class="btn" id="clear">🗑️ 새 종이</button>
   </div>
   <textarea id="ed" placeholder="여기에 글자를 써봐요! 🐣" autofocus></textarea>
@@ -62,6 +64,14 @@
     if(setMemos(a)){ KID.good(); toast('💾 저장했어요!'); } else { currentId=null; }
   };
   document.getElementById('load').onclick=function(){ KID.click(); renderList(); document.getElementById('modal').classList.add('on'); };
+  document.getElementById('share').onclick=function(){
+    var t=ed.value.trim(); if(!t){ toast('쓸 내용이 없어요'); return; }
+    KID.shareWork('memo',ed.value,t.split('\n')[0].slice(0,40),function(ok,msg){ toast(msg); });
+  };
+  document.getElementById('inbox').onclick=function(){
+    KID.openInbox('memo',function(w){ ed.value=w.content; currentId=null; ed.focus(); toast('🎁 '+w.owner+'의 글이에요'); },
+      function(ok,msg){ if(!ok)toast(msg); });
+  };
   document.getElementById('modal').onclick=function(e){ if(e.target.id==='modal') this.classList.remove('on'); };
   function renderList(){
     var a=getMemos(), box=document.getElementById('list'); box.innerHTML='';

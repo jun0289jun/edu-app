@@ -99,7 +99,7 @@
         </div>
       </div>
       <div class="card">
-        <h2>🖼️ 찍은 사진</h2>
+        <h2>🖼️ 찍은 사진 <button class="fun" id="inbox" style="padding:7px 10px">🎁 받은 사진</button></h2>
         <div id="gallery"></div>
         <div class="hint">사진을 누르면 크게 볼 수 있어요.</div>
       </div>
@@ -132,6 +132,7 @@
     <img id="lbimg" src="" alt="">
     <div class="lb">
       <button id="lbsave" style="background:#8be78b">💾 저장</button>
+      <button id="lbshare" style="background:#c79bff">🎁 보내기</button>
       <button id="lbdel" style="background:#ff9db0">🗑️ 삭제</button>
       <button id="lbclose" style="background:#fff">닫기</button>
     </div>
@@ -143,6 +144,7 @@
     </filter>
   </svg>
 
+<script src="kid.js"></script>
 <script>
 (function(){
   var video=document.getElementById('video'), snap=document.getElementById('snap');
@@ -235,7 +237,9 @@
   document.getElementById('lbclose').onclick=function(){ document.getElementById('lightbox').classList.remove('on'); };
   document.getElementById('lightbox').onclick=function(e){ if(e.target.id==='lightbox') this.classList.remove('on'); };
   document.getElementById('lbsave').onclick=function(){ if(!curLB)return; var a=document.createElement('a'); a.href=curLB.img; a.download='우리사진_'+curLB.id+'.jpg'; a.click(); };
+  document.getElementById('lbshare').onclick=function(){ if(!curLB)return; KID.shareWork('photo',curLB.img,'우리 사진',function(ok,msg){ if(ok)alert('🎁 보냈어요!'); else alert(msg); }); };
   document.getElementById('lbdel').onclick=function(){ if(!curLB)return; setPhotos(getPhotos().filter(function(x){return x.id!==curLB.id;})); document.getElementById('lightbox').classList.remove('on'); renderAlbum(); };
+  document.getElementById('inbox').onclick=function(){ KID.openInbox('photo',function(w){ openLB({id:'shared',img:w.content,shared:true}); },function(ok,msg){if(!ok)alert(msg);}); };
   renderAlbum();
 
   start();
