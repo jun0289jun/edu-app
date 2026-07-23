@@ -7,9 +7,14 @@
 <link rel="stylesheet" href="kid.css">
 <style>
   #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:10px;}
-  #num{font-size:clamp(40px,12vw,110px);font-weight:800;line-height:1.1;letter-spacing:2px;background:#233;color:#fff;
-    border-radius:20px;padding:14px 30px;box-shadow:0 6px 18px #0003;font-variant-numeric:tabular-nums;max-width:96vw;
-    word-break:break-all;text-align:center;}
+  #num{font-size:clamp(40px,12vw,110px);font-weight:800;line-height:1.1;letter-spacing:4px;
+    font-family:"Consolas","DejaVu Sans Mono","Courier New",monospace;font-variant-numeric:tabular-nums;
+    background:#1c2a30;border-radius:20px;padding:14px 30px;box-shadow:0 6px 18px #0004,inset 0 2px 10px #0006;
+    max-width:96vw;word-break:break-all;text-align:center;}
+  #num .z{color:#3a4d55;}            /* 채움용 0: 아주 어둡게 */
+  #num .d{color:#fff;text-shadow:0 0 10px #fff4;}  /* 실제 숫자: 흰색 */
+  #num.bump{animation:bump .18s ease;}
+  @keyframes bump{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
   #row{display:flex;gap:16px;align-items:center;}
   .big{font-size:52px;font-weight:800;border:none;border-radius:24px;width:104px;height:104px;box-shadow:0 6px 0 #0003;}
   #minus{background:#ff9db0;color:#fff;} #plus{background:#8be78b;color:#fff;}
@@ -25,7 +30,10 @@
   #settings .panel{background:#fff;border-radius:18px;padding:20px;width:min(92vw,420px);}
   #settings h2{margin:0 0 12px;}
   #settings label{display:block;font-size:16px;font-weight:800;margin:14px 0 6px;}
-  #settings select{width:100%;font-size:20px;font-weight:800;padding:10px;border-radius:12px;border:3px solid #ddd;}
+  #settings select,#settings input{width:100%;font-size:20px;font-weight:800;padding:10px;border-radius:12px;border:3px solid #ddd;box-sizing:border-box;}
+  #startrow{display:flex;gap:8px;}
+  #startrow input{flex:1;}
+  #setstart{background:#8be78b;color:#fff;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -53,43 +61,89 @@
       <option value="1">1자리 (0~9)</option>
       <option value="2">2자리 (~99)</option>
       <option value="3">3자리 (~999)</option>
-      <option value="4">4자리 (~9,999)</option>
+      <option value="4">4자리 (~9999)</option>
       <option value="5">5자리 (~9만)</option>
       <option value="6">6자리 (~99만)</option>
       <option value="7">7자리 (~999만)</option>
-      <option value="8">8자리 (~9,999만)</option>
+      <option value="8">8자리 (~9999만)</option>
       <option value="9">9자리 (~9억)</option>
     </select>
     <label>증가치 (한 번에 얼마씩)</label>
     <select id="inc">
       <option value="1">1</option><option value="10">10</option><option value="100">100</option>
-      <option value="1000">1,000 (천)</option><option value="10000">10,000 (만)</option>
-      <option value="100000">100,000 (십만)</option><option value="1000000">1,000,000 (백만)</option>
-      <option value="10000000">10,000,000 (천만)</option><option value="100000000">100,000,000 (억)</option>
+      <option value="1000">1000 (천)</option><option value="10000">10000 (만)</option>
+      <option value="100000">100000 (십만)</option><option value="1000000">1000000 (백만)</option>
+      <option value="10000000">10000000 (천만)</option><option value="100000000">100000000 (억)</option>
     </select>
+    <label>시작 숫자 (여기부터 이어서 세기)</label>
+    <div id="startrow">
+      <input id="startnum" type="number" inputmode="numeric" min="0" placeholder="예: 285">
+      <button class="btn" id="setstart">적용</button>
+    </div>
     <div style="margin-top:16px;text-align:right"><button class="btn" id="close" style="background:#8be78b">닫기</button></div>
   </div></div>
 <script src="kid.js"></script>
 <script>
-  var digits=1, inc=1, count=0;
+  var digits=1, inc=1, count=0, rolling=false;
+  var numEl=document.getElementById('num');
   function max(){ return Math.pow(10,digits)-1; }
-  function render(){ document.getElementById('num').textContent = count.toLocaleString('en-US');
-    document.getElementById('inclbl').textContent = '+'+inc.toLocaleString('en-US')+' 씩'; }
-  function set(n,speak){ var m=max()+1; count=((n%m)+m)%m; render(); if(speak!==false) KID.speak(KID.numKor(count),'ko'); }
-  document.getElementById('plus').onclick=function(){ KID.pop(); set(count+inc); };
-  document.getElementById('minus').onclick=function(){ KID.pop(); set(count-inc); };
-  document.getElementById('rnd').onclick=function(){ KID.click(); set(Math.floor(Math.random()*(max()+1))); };
-  document.getElementById('zero').onclick=function(){ KID.click(); set(0,false); };
-  document.querySelectorAll('.say').forEach(function(b){ b.onclick=function(){ KID.speak(b.dataset.l==='ko'?KID.numKor(count):count,b.dataset.l); }; });
+
+  // 자리수만큼 0 패딩 + 채움0(어둡게)/실제숫자(흰색) 분리, 쉼표 없음
+  function paint(){
+    var s=String(count); if(s.length>digits) s=s.slice(-digits);
+    var zeros=digits-s.length;
+    numEl.innerHTML=(zeros>0?'<span class="z">'+Array(zeros+1).join('0')+'</span>':'')+'<span class="d">'+s+'</span>';
+  }
+  function render(){ paint(); document.getElementById('inclbl').textContent='+'+inc+' 씩'; }
+  function bump(){ numEl.classList.remove('bump'); void numEl.offsetWidth; numEl.classList.add('bump'); }
+  function save(){ try{ localStorage.setItem('cnt_count',count); localStorage.setItem('cnt_digits',digits); localStorage.setItem('cnt_inc',inc); }catch(e){} }
+  function set(n,speak){ var m=max()+1; count=((n%m)+m)%m; render(); save(); if(speak!==false) KID.speak(KID.numKor(count),'ko'); }
+
+  document.getElementById('plus').onclick=function(){ if(rolling)return; KID.pop(); set(count+inc); };
+  document.getElementById('minus').onclick=function(){ if(rolling)return; KID.pop(); set(count-inc); };
+  document.getElementById('zero').onclick=function(){ if(rolling)return; KID.click(); set(0,false); };
+
+  // 랜덤: 또르르 굴러가다 목표값에 멈추는 슬롯머신
+  document.getElementById('rnd').onclick=function(){ if(rolling)return; roll(); };
+  function roll(){
+    rolling=true;
+    var target=Math.floor(Math.random()*(max()+1));
+    var i=0, total=18, delay=45;
+    (function step(){
+      if(i>=total){ rolling=false; bump(); set(target); return; }   // 착지: 실제값 + 음성
+      count=Math.floor(Math.random()*(max()+1)); paint(); KID.type();
+      i++; delay+=Math.round(delay*0.13);                            // 점점 느려짐
+      setTimeout(step, delay);
+    })();
+  }
+
+  document.querySelectorAll('.say').forEach(function(b){ b.onclick=function(){ if(rolling)return; KID.speak(b.dataset.l==='ko'?KID.numKor(count):count,b.dataset.l); }; });
   document.addEventListener('keydown',function(e){
-    if(e.key==='ArrowUp'||e.key==='+'){ e.preventDefault(); set(count+inc); }
-    else if(e.key==='ArrowDown'||e.key==='-'){ e.preventDefault(); set(count-inc); } });
+    if(rolling)return;
+    if(e.key==='ArrowUp'||e.key==='+'){ e.preventDefault(); KID.pop(); set(count+inc); }
+    else if(e.key==='ArrowDown'||e.key==='-'){ e.preventDefault(); KID.pop(); set(count-inc); } });
+
   // 설정
-  document.getElementById('gear').onclick=function(){ document.getElementById('settings').classList.add('open'); };
-  document.getElementById('close').onclick=function(){ document.getElementById('settings').classList.remove('open'); };
-  document.getElementById('settings').onclick=function(e){ if(e.target.id==='settings') this.classList.remove('open'); };
-  document.getElementById('digits').onchange=function(){ digits=parseInt(this.value,10); if(count>max())count=0; if(inc>max())inc=1,document.getElementById('inc').value='1'; render(); };
-  document.getElementById('inc').onchange=function(){ inc=parseInt(this.value,10); render(); };
+  var settingsEl=document.getElementById('settings');
+  document.getElementById('gear').onclick=function(){ document.getElementById('startnum').value=count; settingsEl.classList.add('open'); };
+  document.getElementById('close').onclick=function(){ settingsEl.classList.remove('open'); };
+  settingsEl.onclick=function(e){ if(e.target.id==='settings') this.classList.remove('open'); };
+  document.getElementById('digits').onchange=function(){ digits=parseInt(this.value,10);
+    if(count>max())count=max(); if(inc>max()){inc=1;document.getElementById('inc').value='1';} render(); save(); };
+  document.getElementById('inc').onchange=function(){ inc=parseInt(this.value,10); render(); save(); };
+  document.getElementById('setstart').onclick=function(){
+    var v=parseInt(document.getElementById('startnum').value,10); if(isNaN(v))return;
+    KID.click(); settingsEl.classList.remove('open'); bump(); set(v); };
+
+  // 저장된 상태 복원 (다음날 이어서 세기)
+  (function restore(){
+    var sd=parseInt(localStorage.getItem('cnt_digits'),10); if(sd>=1&&sd<=9) digits=sd;
+    var si=parseInt(localStorage.getItem('cnt_inc'),10); if(si>=1) inc=si;
+    var sc=parseInt(localStorage.getItem('cnt_count'),10); if(!isNaN(sc)) count=sc;
+    if(inc>max()) inc=1; if(count>max()) count=max();
+    document.getElementById('digits').value=digits;
+    if(document.querySelector('#inc option[value="'+inc+'"]')) document.getElementById('inc').value=inc;
+  })();
   render();
 </script>
 </body>
