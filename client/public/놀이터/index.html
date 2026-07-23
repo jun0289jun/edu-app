@@ -25,10 +25,23 @@
   .c8{background:linear-gradient(#ffb3a0,#ff6f52);}
   .c9{background:linear-gradient(#a0d8b0,#4bbf7a);}
   .c10{background:linear-gradient(#8be0d0,#2ac6a0);}
+  #pbadge{display:inline-flex;align-items:center;gap:8px;background:#fff9;border-radius:18px;padding:8px 16px;
+    font-size:22px;font-weight:800;box-shadow:0 3px 0 #0002;cursor:pointer;margin-bottom:4px;border:none;}
+  #pbadge .av{font-size:30px;line-height:1;}
+  #pick{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:20;padding:14px;}
+  #pick.on{display:flex;}
+  #pick .panel{background:#fff;border-radius:22px;padding:20px;width:min(94vw,460px);}
+  #pick h2{margin:0 0 6px;font-size:26px;}
+  #avs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0;}
+  #avs button{font-size:30px;border:none;background:#f2f4f8;border-radius:14px;padding:8px 0;cursor:pointer;}
+  #avs button.sel{background:#ffe27a;outline:3px solid #ffb800;}
+  #pname{width:100%;font-size:24px;font-weight:800;text-align:center;padding:12px;border-radius:14px;border:3px solid #ddd;box-sizing:border-box;}
+  #psave{margin-top:14px;font-size:22px;background:#8be78b;color:#fff;}
 </style>
 </head>
 <body>
   <h1>🎈 놀이터</h1>
+  <button id="pbadge"></button>
   <div id="grid">
     <a class="tile c1" href="메모장.html"><span class="emo">✏️</span>메모장</a>
     <a class="tile c2" href="그림판.html"><span class="emo">🎨</span>그림판</a>
@@ -36,12 +49,36 @@
     <a class="tile c4" href="게임.html"><span class="emo">🎮</span>게임</a>
     <a class="tile c7" href="글자놀이.html"><span class="emo">🏰</span>글자놀이</a>
     <a class="tile c5" href="카메라.html"><span class="emo">📸</span>카메라</a>
+    <a class="tile c8" href="랭킹.html"><span class="emo">🏆</span>랭킹</a>
   </div>
+  <div id="pick"><div class="panel">
+    <h2>누구야? 🙂</h2>
+    <div id="avs"></div>
+    <input id="pname" maxlength="12" placeholder="이름 (예: 하준)">
+    <div style="text-align:right"><button class="btn" id="psave">저장 ✅</button></div>
+  </div></div>
 <script src="kid.js"></script>
 <script>
   document.querySelectorAll('a.tile').forEach(function(t){
     t.addEventListener('click',function(){ KID.pop(); });
   });
+  // ===== 프로필(누가 플레이 중) =====
+  var AV=['🦁','🐯','🐰','🐻','🐼','🐵','🐶','🐱','🦊','🐸','🐨','🐷','🐔','🦄','🐢','🐧','🐥','🦋'];
+  var pick=document.getElementById('pick'), badge=document.getElementById('pbadge'),
+      avs=document.getElementById('avs'), pname=document.getElementById('pname'), chosen='🐥';
+  AV.forEach(function(a){ var b=document.createElement('button'); b.textContent=a;
+    b.onclick=function(){ chosen=a; KID.click(); selAvatar(a); }; avs.appendChild(b); });
+  function selAvatar(a){ chosen=a; [].forEach.call(avs.children,function(x){ x.classList.toggle('sel', x.textContent===a); }); }
+  function updBadge(){ var p=KID.profile();
+    badge.innerHTML = (p&&p.name) ? ('<span class="av">'+p.avatar+'</span>'+p.name) : '<span class="av">👤</span>누구야?'; }
+  function openPick(){ var p=KID.profile(); pname.value=(p&&p.name)||''; selAvatar((p&&p.avatar)||'🐥'); pick.classList.add('on'); KID.pop(); }
+  badge.onclick=openPick;
+  pick.onclick=function(e){ if(e.target.id==='pick') pick.classList.remove('on'); };
+  document.getElementById('psave').onclick=function(){
+    var nm=pname.value.trim(); if(!nm){ pname.focus(); return; }
+    KID.setProfile(nm,chosen); KID.good(); pick.classList.remove('on'); updBadge(); };
+  updBadge();
+  if(!KID.profile()){ setTimeout(openPick,400); }   // 첫 방문이면 이름 정하기
 </script>
 </body>
 </html>
