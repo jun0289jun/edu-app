@@ -27,6 +27,7 @@
   <div id="cheer">🎉</div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   var g,cols,rows,px,py,level=1,S=32;
   function gen(c,r){
@@ -76,6 +77,7 @@
   document.querySelectorAll('#pad button').forEach(function(b){ b.addEventListener('click',function(){ move(b.dataset.d); }); });
   window.addEventListener('resize',build);
   build();
+})();
 </script>
 </body>
 </html>

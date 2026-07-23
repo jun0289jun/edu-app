@@ -41,6 +41,7 @@
   <div id="modal"><div class="panel"><h2>📂 저장한 메모</h2><div id="list"></div></div></div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var ed=document.getElementById('ed'), size=56, currentId=null;
   ed.addEventListener('input',function(){ KID.type(); });
   document.getElementById('big').onclick=function(){ KID.click(); size=Math.min(140,size+12); ed.style.fontSize=size+'px'; };
@@ -76,6 +77,7 @@
     });
   }
   ed.focus();
+})();
 </script>
 </body>
 </html>

@@ -52,6 +52,7 @@
   <div id="modal"><div class="panel"><h2>📂 내 그림</h2><div id="gal"></div></div></div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   var color='#233', size=16, drawing=false, lastX=0, lastY=0, currentId=null;
   function fit(){
@@ -106,6 +107,7 @@
       b.appendChild(dl); b.appendChild(del); fig.appendChild(img); fig.appendChild(b); box.appendChild(fig);
     });
   }
+})();
 </script>
 </body>
 </html>

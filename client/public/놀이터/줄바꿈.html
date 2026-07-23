@@ -36,6 +36,7 @@
   </div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var SETS=[['하늘','바다','나무'],['사과','포도','딸기'],['빨강','노랑','파랑'],['토끼','거북이','다람쥐'],
     ['봄','여름','가을','겨울'],['해','달','별'],['엄마','아빠','나'],['하나','둘','셋']];
   var words=[], text='', correctGaps=[], accepted=[], cursor=1, score=0, locked=false, hintOn=false;
@@ -64,6 +65,7 @@
   document.getElementById('hint').addEventListener('click',function(){ if(locked)return; KID.click(); hintOn=true; render(); setTimeout(function(){ hintOn=false; render(); },1800); });
   document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('newline');
   pick();
+})();
 </script>
 </body>
 </html>

@@ -38,6 +38,7 @@
   <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button></div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   if(!ctx.roundRect){ ctx.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); return this; }; }
   var W,H,lanes=2,lane,items,score,lives,mode,spawnT,speed,playing,raf;
@@ -88,6 +89,7 @@
     document.querySelectorAll('#lv .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); start(); }; });
   document.getElementById('again').addEventListener('click',function(){ KID.pop(); start(); });
   start();
+})();
 </script>
 </body>
 </html>

@@ -40,6 +40,7 @@
   </div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var COLS=9, ROWS=7;
   var board=document.getElementById('board'), hero=document.getElementById('hero'), star=document.getElementById('star');
   var hx,hy,sx,sy,score,lives,walls,starTime,starLeft,playing,timer;
@@ -85,6 +86,7 @@
   document.getElementById('again').addEventListener('click',function(){ KID.pop(); start(); });
   window.addEventListener('resize',function(){ draw(); drawWalls(); });
   start();
+})();
 </script>
 </body>
 </html>

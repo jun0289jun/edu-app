@@ -28,6 +28,7 @@
   <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button></div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   var S=28, C, R, snake, dir, ndir, food, score, timer, speed;
   if(!ctx.roundRect){ ctx.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); return this; }; }
@@ -81,6 +82,7 @@
   document.querySelectorAll('#pad button').forEach(function(b){ b.addEventListener('click',function(){ turn(b.dataset.d); }); });
   document.getElementById('again').addEventListener('click',function(){ KID.pop(); start(); });
   start();
+})();
 </script>
 </body>
 </html>

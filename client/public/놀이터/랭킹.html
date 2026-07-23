@@ -35,6 +35,7 @@
   </div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var listEl=document.getElementById('list'), msgEl=document.getElementById('msg'),
       loadEl=document.getElementById('load'), meEl=document.getElementById('me');
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -86,6 +87,7 @@
     else if(err){ renderLocal('😅 순위를 못 불러왔어요. 잠시 후 다시!<br>지금은 <b>내 기록</b>만!'); }
     else { renderOnline(data); }
   });
+})();
 </script>
 </body>
 </html>

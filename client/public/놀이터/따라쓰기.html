@@ -43,6 +43,7 @@
   </div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var WORDS=[
     ['🍎','사과','apple'],['🐶','강아지','dog'],['🐱','고양이','cat'],['🚗','자동차','car'],
     ['⭐','별','star'],['🌙','달','moon'],['☀️','해','sun'],['🍌','바나나','banana'],
@@ -113,6 +114,7 @@
   });
   document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('trace');
   pick();
+})();
 </script>
 </body>
 </html>

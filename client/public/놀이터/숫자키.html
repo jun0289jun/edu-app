@@ -42,6 +42,7 @@
   </div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var digits=1, target='', typed='', score=0, locked=false;
   var targetEl=document.getElementById('target'), typedEl=document.getElementById('typed'), fb=document.getElementById('fb');
   // 숫자키 0~9
@@ -71,6 +72,7 @@
     document.querySelectorAll('#lv .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); next(); }; });
   document.getElementById('score').innerHTML='⭐ 0 &nbsp; 🏆 '+KID.hiGet('numbers');
   next();
+})();
 </script>
 </body>
 </html>

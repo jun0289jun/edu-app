@@ -58,6 +58,7 @@
 
 <script src="kid.js"></script>
 <script>
+(function(){
   document.querySelectorAll('#tabs .btn').forEach(function(b){
     b.onclick=function(){ KID.click();
       document.querySelectorAll('#tabs .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on');
@@ -136,6 +137,7 @@
   document.getElementById('op').onchange=function(){ KID.click(); newQ(); };
   document.getElementById('ans').addEventListener('keydown',function(e){ if(e.key==='Enter') check(); });
   updScore(); newQ();
+})();
 </script>
 </body>
 </html>

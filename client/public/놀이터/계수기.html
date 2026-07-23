@@ -88,6 +88,7 @@
   </div></div>
 <script src="kid.js"></script>
 <script>
+(function(){
   var digits=1, inc=1, count=0, rolling=false, autospeak=false;
   var numEl=document.getElementById('num');
   function max(){ return Math.pow(10,digits)-1; }
@@ -153,6 +154,7 @@
     if(document.querySelector('#inc option[value="'+inc+'"]')) document.getElementById('inc').value=inc;
   })();
   render();
+})();
 </script>
 </body>
 </html>
