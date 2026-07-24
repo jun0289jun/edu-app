@@ -43,7 +43,7 @@
   if(!ctx.roundRect){ ctx.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); return this; }; }
   var W,H,lanes=2,lane,items,score,lives,mode,spawnT,speed,playing,raf;
   var KO='가나다라마바사아자차카타파하고노도무리버'.split(''), EN='ABCDEFGHJKLMNPRSTUW'.split('');
-  var SPEED={2:1.1,3:1.5,5:2.1}, SPAWN={2:150,3:120,5:95};
+  var SPEED={2:0.75,3:1.0,5:1.4}, SPAWN={2:200,3:160,5:120};
   function resize(){ var wrap=document.getElementById('wrap'); W=Math.max(280,wrap.clientWidth-8); H=Math.max(240,wrap.clientHeight-8); cv.width=W; cv.height=H; }
   window.addEventListener('resize',function(){ resize(); });
   function laneX(i){ return (i+0.5)/lanes*W; }
@@ -57,9 +57,9 @@
     ch: ko?KO[Math.floor(Math.random()*KO.length)]:EN[Math.floor(Math.random()*EN.length)], lang: ko?'ko':'en', v:speed}); }
   function toggleMode(){ mode=(mode==='ko')?'en':'ko'; KID.pop(); }
   function step(){
-    spawnT--; if(spawnT<=0){ spawn(); spawnT=Math.max(SPAWN[lanes]*0.55, SPAWN[lanes]-score*1.2); }
+    spawnT--; if(spawnT<=0){ spawn(); spawnT=Math.max(SPAWN[lanes]*0.65, SPAWN[lanes]-score*0.8); }
     for(var i=items.length-1;i>=0;i--){ var b=items[i]; b.y+=b.v;
-      if(b.y>basketY()-30 && b.y<basketY()+18 && b.lane===lane && b.lang===mode){ items.splice(i,1); score++; KID.star(); speed=Math.min(SPEED[lanes]*2.6, SPEED[lanes]+score*0.04); updHud(); continue; }
+      if(b.y>basketY()-30 && b.y<basketY()+18 && b.lane===lane && b.lang===mode){ items.splice(i,1); score++; KID.star(); speed=Math.min(SPEED[lanes]*2.0, SPEED[lanes]+score*0.025); updHud(); continue; }
       if(b.y>H-16){ items.splice(i,1); lives--; KID.bad(); updHud(); if(lives<=0){ return gameOver(); } } }
     render(); if(playing) raf=requestAnimationFrame(step);
   }
