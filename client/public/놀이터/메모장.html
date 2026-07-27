@@ -61,7 +61,10 @@
     var a=getMemos();
     if(currentId){ a=a.filter(function(x){return x.id!==currentId;}); } else { currentId=Date.now(); }
     a.unshift({id:currentId, text:ed.value});
-    if(setMemos(a)){ KID.good(); toast('💾 저장했어요!'); } else { currentId=null; }
+    if(setMemos(a)){ KID.good(); toast('💾 저장했어요!');
+      // 서버 백업 (프로필이 설정된 경우에만, 실패해도 무시)
+      KID._selfSave('memo',ed.value,currentId,t.split('\n')[0].slice(0,40),null);
+    } else { currentId=null; }
   };
   document.getElementById('load').onclick=function(){ KID.click(); renderList(); document.getElementById('modal').classList.add('on'); };
   document.getElementById('share').onclick=function(){
@@ -74,7 +77,19 @@
   };
   document.getElementById('modal').onclick=function(e){ if(e.target.id==='modal') this.classList.remove('on'); };
   function renderList(){
-    var a=getMemos(), box=document.getElementById('list'); box.innerHTML='';
+    var box=document.getElementById('list');
+    box.innerHTML='<p style="color:#888">☁️ 불러오는 중…</p>';
+    // 서버 + 로컬 병합 (id 기준 중복 제거, 서버 우선)
+    KID._selfLoad('memo',function(serverMemos){
+      var local=getMemos(), map={};
+      local.forEach(function(m){ map[String(m.id)]={id:m.id,text:m.text}; });
+      serverMemos.forEach(function(w){ map[String(w.id)]={id:w.id,text:w.content}; });
+      var merged=Object.keys(map).sort(function(a,b){return Number(b)-Number(a);}).map(function(k){return map[k];});
+      renderListData(merged);
+    });
+  }
+  function renderListData(a){
+    var box=document.getElementById('list'); box.innerHTML='';
     if(!a.length){ box.innerHTML='<p style="font-size:18px;color:#888">아직 저장한 게 없어요.</p>'; return; }
     a.forEach(function(m){
       var d=document.createElement('div'); d.className='memo';
@@ -82,7 +97,10 @@
       d.innerHTML='<span class="txt">📝 '+preview+'</span>';
       var del=document.createElement('button'); del.className='del'; del.textContent='🗑️';
       d.querySelector('.txt').onclick=function(){ KID.pop(); ed.value=m.text; currentId=m.id; document.getElementById('modal').classList.remove('on'); ed.focus(); toast('불러왔어요!'); };
-      del.onclick=function(){ KID.click(); setMemos(getMemos().filter(function(x){return x.id!==m.id;})); renderList(); };
+      del.onclick=function(){ KID.click();
+        setMemos(getMemos().filter(function(x){return x.id!==m.id;}));
+        KID._selfDelete(m.id,null);  // 서버에서도 삭제
+        renderList(); };
       d.appendChild(del); box.appendChild(d);
     });
   }

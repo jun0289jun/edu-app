@@ -259,6 +259,37 @@ window.KID = (function(){
         el.onclick=function(){ location.href='랭킹.html'; };
         document.body.appendChild(el);
       });
+    },
+
+    // ===== 개인 작품 서버 백업 (캐시 삭제해도 유지) =====
+    // 저장: 나만 볼 수 있는 작품을 서버 DB에 백업 (recipients=[] = 공유 없음)
+    _selfSave:function(type,content,id,title,cb){
+      var p=this.profile();
+      if(!p||!p.name||!this.WORKS_URL){if(cb)cb(false);return;}
+      try{fetch(this.WORKS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({id:String(id),owner:p.name,ownerAvatar:p.avatar||'🐥',
+          type:type,title:title||'',content:content,recipients:[],ts:Date.now()})})
+        .then(function(r){if(cb)cb(r.ok);}).catch(function(){if(cb)cb(false);});}
+      catch(e){if(cb)cb(false);}
+    },
+    // 로드: 서버에서 내가 저장한 작품 목록 반환
+    _selfLoad:function(type,cb){
+      var p=this.profile();
+      if(!p||!p.name||!this.WORKS_URL){cb([]);return;}
+      try{fetch(this.WORKS_URL+'?profile='+encodeURIComponent(p.name)+'&type='+encodeURIComponent(type))
+        .then(function(r){if(!r.ok)throw 0;return r.json();})
+        .then(function(d){cb((d.works||[]).filter(function(w){return w.owner===p.name;}));})
+        .catch(function(){cb([]);});}
+      catch(e){cb([]);}
+    },
+    // 삭제: 서버에서 특정 작품 제거
+    _selfDelete:function(id,cb){
+      var p=this.profile();
+      if(!p||!p.name||!this.WORKS_URL){if(cb)cb(false);return;}
+      try{fetch(this.WORKS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'delete',id:String(id),owner:p.name})})
+        .then(function(r){if(cb)cb(r.ok);}).catch(function(){if(cb)cb(false);});}
+      catch(e){if(cb)cb(false);}
     }
   };
 })();
