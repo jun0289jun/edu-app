@@ -56,14 +56,14 @@
     while(q.length){ var c=q.shift(); [[0,-1],[0,1],[-1,0],[1,0]].forEach(function(d){ var nx=c[0]+d[0], ny=c[1]+d[1];
       if(nx>=0&&ny>=0&&nx<COLS&&ny<ROWS&&!isWall(nx,ny)&&!seen[cell(nx,ny)]){ seen[cell(nx,ny)]=1; q.push([nx,ny]); } }); } return seen; }
   function reachableCells(){ var r=reachSet(), out=[]; for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++){ if(r[cell(x,y)]&&!(x===hx&&y===hy)) out.push([x,y]); } return out; }
-  function addWall(){ if(walls.length>=COLS*ROWS-14) return; var tries=0;
+  function addWall(){ if(walls.length>=Math.floor(COLS*ROWS/3)) return; var tries=0;
     while(tries++<40){ var x=Math.floor(Math.random()*COLS), y=Math.floor(Math.random()*ROWS);
       if((x===hx&&y===hy)||(x===sx&&y===sy)||isWall(x,y)) continue;
-      walls.push(cell(x,y)); if(reachSet()[cell(sx,sy)]){ drawWalls(); return; } else walls.pop(); } }
+      walls.push(cell(x,y)); if(reachableCells().length>=10 && reachSet()[cell(sx,sy)]){ drawWalls(); return; } else walls.pop(); } }
   function newStar(){ var cells=reachableCells(); if(!cells.length){ walls=[]; drawWalls(); cells=reachableCells(); }
     var e=cells[Math.floor(Math.random()*cells.length)]; sx=e[0]; sy=e[1];
     // 시작은 여유있게, 점수 오를수록 점점 빨라짐(완만하게)
-    starTime=Math.max(3.5, 15 - score*0.12); starLeft=starTime; draw(); updBar(); }
+    starTime=Math.max(1.8, 15 - Math.floor(score/10)*1.2); starLeft=starTime; draw(); updBar(); }
   function updHud(){ document.getElementById('score').textContent='⭐ '+score;
     document.getElementById('life').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives); }
   function updBar(){ document.getElementById('fill').style.width=Math.max(0,starLeft/starTime*100)+'%'; }
