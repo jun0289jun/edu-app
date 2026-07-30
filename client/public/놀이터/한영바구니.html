@@ -43,7 +43,7 @@
   if(!ctx.roundRect){ ctx.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); return this; }; }
   var W,H,lanes=2,lane,items,score,lives,mode,spawnT,speed,playing,raf;
   var KO='가나다라마바사아자차카타파하고노도무리버'.split(''), EN='ABCDEFGHJKLMNPRSTUW'.split('');
-  var SPEED={2:0.75,3:1.0,5:1.4}, SPAWN={2:200,3:160,5:120};
+  var SPEED={2:0.55,3:0.8,5:1.2}, SPAWN={2:300,3:220,5:160};
   function resize(){ var wrap=document.getElementById('wrap'); W=Math.max(280,wrap.clientWidth-8); H=Math.max(240,wrap.clientHeight-8); cv.width=W; cv.height=H; }
   window.addEventListener('resize',function(){ resize(); });
   function laneX(i){ return (i+0.5)/lanes*W; }
