@@ -52,7 +52,7 @@
   function start(){
     sizeBoard();
     var cx=Math.floor(C/2), cy=Math.floor(R/2);
-    snake=[{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy}]; dir={x:1,y:0}; ndir=dir; score=0; speed=700;
+    snake=[{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy}]; dir={x:1,y:0}; ndir=dir; score=0; speed=1500;
     document.getElementById('over').classList.remove('on');
     document.getElementById('hi').textContent='🏆 '+KID.hiGet('snake');
     rndFood(); updHud(); render(); loop();
@@ -64,7 +64,7 @@
     var h={x:(snake[0].x+dir.x+C)%C, y:(snake[0].y+dir.y+R)%R};
     if(snake.some(function(s){return s.x===h.x&&s.y===h.y;})){ return gameOver(); }
     snake.unshift(h);
-    if(h.x===food.x&&h.y===food.y){ score++; KID.star(); updHud(); rndFood(); if(speed>360){ speed-=6; loop(); } }
+    if(h.x===food.x&&h.y===food.y){ score++; KID.star(); updHud(); rndFood(); if(speed>220){ speed-=15; loop(); } }
     else snake.pop();
     render();
   }
