@@ -18,6 +18,7 @@
   button:active{transform:translateY(3px);}
   #over{position:fixed;inset:0;background:#000a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:5;}
   #over.on{display:flex;} #over .big{font-size:34px;font-weight:800;}
+  #over .btn-home{background:#fff3;color:#fff;font-size:20px;text-decoration:none;padding:12px 28px;border-radius:16px;}
 </style>
 </head>
 <body>
@@ -35,7 +36,7 @@
     <button id="toggle">🔄 한/영</button>
     <button class="mv" data-d="1">➡️</button>
   </div>
-  <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button></div>
+  <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button><a class="btn-home" href="게임.html">🏠 게임 목록</a></div>
 <script src="kid.js?v=3"></script>
 <script>
 (function(){

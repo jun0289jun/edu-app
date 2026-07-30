@@ -23,6 +23,7 @@
   .up{grid-area:1/2;}.left{grid-area:2/1;}.right{grid-area:2/3;}.down{grid-area:3/2;}
   #over{position:absolute;inset:0;background:#000a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:5;border-radius:18px;}
   #over.on{display:flex;} #over .big{font-size:34px;font-weight:800;}
+  #over .btn-home{background:#fff3;color:#fff;font-size:20px;text-decoration:none;padding:12px 28px;border-radius:16px;}
 </style>
 </head>
 <body>
@@ -32,7 +33,7 @@
   <div id="bwrap"><div id="board">
     <div class="sprite" id="star" style="font-size:40px">⭐</div>
     <div class="sprite" id="hero" style="font-size:44px">🐢</div>
-    <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button></div>
+    <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button><a class="btn-home" href="게임.html">🏠 게임 목록</a></div>
   </div></div>
   <div id="pad">
     <button class="up" data-d="U">⬆️</button><button class="left" data-d="L">⬅️</button>
