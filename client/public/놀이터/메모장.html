@@ -99,8 +99,8 @@
       d.querySelector('.txt').onclick=function(){ KID.pop(); ed.value=m.text; currentId=m.id; document.getElementById('modal').classList.remove('on'); ed.focus(); toast('불러왔어요!'); };
       del.onclick=function(){ KID.click();
         setMemos(getMemos().filter(function(x){return x.id!==m.id;}));
-        KID._selfDelete(m.id,null);  // 서버에서도 삭제
-        renderList(); };
+        // 서버 삭제 완료 후 갱신 (레이스 컨디션 방지)
+        KID._selfDelete(m.id,function(){ renderList(); }); };
       d.appendChild(del); box.appendChild(d);
     });
   }

@@ -136,8 +136,8 @@
       var del=document.createElement('button'); del.style.background='#ff9db0'; del.textContent='🗑️';
       del.onclick=function(){ KID.click();
         setDraws(getDraws().filter(function(x){return x.id!==d.id;}));
-        KID._selfDelete(d.id,null);  // 서버에서도 삭제
-        renderGal(); };
+        // 서버 삭제 완료 후 갱신 (레이스 컨디션 방지)
+        KID._selfDelete(d.id,function(){ renderGal(); }); };
       b.appendChild(dl); b.appendChild(gift); b.appendChild(del); fig.appendChild(img); fig.appendChild(b); box.appendChild(fig);
     });
   }

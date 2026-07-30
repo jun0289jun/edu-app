@@ -3,8 +3,6 @@ import { ArrowLeft, Volume2, RotateCcw, Settings } from "lucide-react";
 import { useLocation } from "wouter";
 import { SpeechSettingsControls } from "@/components/SpeechSettingsControls";
 import { useSpeechSettings } from "@/hooks/useSpeechSettings";
-import { useSessionId } from "@/hooks/useSessionId";
-import { trpc } from "@/lib/trpc";
 
 // 유니코드 기준 정확한 자모 배열 (한글 유니코드: 0xAC00 + 초성*588 + 중성*28 + 종성)
 const ALL_CHOSUNG = [
@@ -176,55 +174,49 @@ export default function HangeulDialPage() {
   const [showSettings, setShowSettings] = useState(false);
   const speechSettings = useSpeechSettings();
   const { createUtterance } = speechSettings;
-  const sessionId = useSessionId();
 
-  // DB 연동: 초기 데이터 로드
-  const { data: savedProgress } = trpc.hangeul.get.useQuery(
-    { sessionId },
-    { enabled: !!sessionId, staleTime: Infinity }
-  );
-  const saveMutation = trpc.hangeul.save.useMutation();
-
-  // 저장된 진도 복원 (최초 1회만)
+  // localStorage에서 진도 복원 (최초 1회)
   const restoredRef = useRef(false);
   useEffect(() => {
-    if (savedProgress && !restoredRef.current) {
-      restoredRef.current = true;
-      setDifficulty(savedProgress.difficulty);
-      setChoPos(savedProgress.choPos);
-      setJungPos(savedProgress.jungPos);
-      setJongPos(savedProgress.jongPos);
-      setShowJongsung(savedProgress.showJongsung === 1);
-    }
-  }, [savedProgress]);
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const saved = JSON.parse(localStorage.getItem('hangeul_progress') || 'null');
+      if (saved) {
+        setDifficulty(saved.difficulty || 'easy');
+        setChoPos(saved.choPos ?? 0);
+        setJungPos(saved.jungPos ?? 0);
+        setJongPos(saved.jongPos ?? 0);
+        setShowJongsung(!!saved.showJongsung);
+      }
+    } catch {}
+  }, []);
 
   // totalRead 카운터
-  const totalReadRef = useRef(savedProgress?.totalRead ?? 0);
+  const totalReadRef = useRef(0);
   useEffect(() => {
-    if (savedProgress) totalReadRef.current = savedProgress.totalRead;
-  }, [savedProgress]);
+    try {
+      const saved = JSON.parse(localStorage.getItem('hangeul_progress') || 'null');
+      if (saved?.totalRead) totalReadRef.current = saved.totalRead;
+    } catch {}
+  }, []);
 
-  // DB 저장 (500ms debounce)
+  // localStorage 저장 (500ms debounce)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveToDb = useCallback((
     diff: string, cho: number, jung: number, jong: number,
     showJong: boolean, reads: number, lastCh?: string
   ) => {
-    if (!sessionId) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      saveMutation.mutate({
-        sessionId,
-        difficulty: diff as 'easy' | 'medium' | 'hard',
-        choPos: cho,
-        jungPos: jung,
-        jongPos: jong,
-        showJongsung: showJong ? 1 : 0,
-        totalRead: reads,
-        lastChar: lastCh,
-      });
+      try {
+        localStorage.setItem('hangeul_progress', JSON.stringify({
+          difficulty: diff, choPos: cho, jungPos: jung, jongPos: jong,
+          showJongsung: showJong, totalRead: reads, lastChar: lastCh,
+        }));
+      } catch {}
     }, 500);
-  }, [sessionId, saveMutation]);
+  }, []);
 
   const config = DIFFICULTY[difficulty];
 
