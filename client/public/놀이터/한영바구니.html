@@ -58,7 +58,7 @@
     ch: ko?KO[Math.floor(Math.random()*KO.length)]:EN[Math.floor(Math.random()*EN.length)], lang: ko?'ko':'en', v:speed}); }
   function toggleMode(){ mode=(mode==='ko')?'en':'ko'; KID.pop(); }
   function step(){
-    spawnT--; if(spawnT<=0){ spawn(); spawnT=SPAWN[lanes]; }
+    spawnT--; if(spawnT<=0){ spawn(); spawnT=Math.max(15,Math.round(SPAWN[lanes]/Math.pow(1.08,score))); }
     for(var i=items.length-1;i>=0;i--){ var b=items[i]; b.y+=b.v;
       if(b.y>basketY()-30 && b.y<basketY()+18 && b.lane===lane && b.lang===mode){ items.splice(i,1); score++; KID.star(); speed=SPEED[lanes]*Math.pow(1.08,score); updHud(); continue; }
       if(b.y>H-16){ items.splice(i,1); lives--; KID.bad(); updHud(); if(lives<=0){ return gameOver(); } } }
