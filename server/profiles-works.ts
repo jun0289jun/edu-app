@@ -118,11 +118,12 @@ export function registerProfilesWorksRoutes(app: Express) {
           .onDuplicateKeyUpdate({ set: { avatar, updatedAt: new Date() } });
         // scores 테이블: 이름 업데이트 (기본키 변경은 삭제+삽입)
         const oldScores = await db.select().from(scores).where(eq(scores.name, oldName));
-        if (oldScores.length > 0) {
-          const s = oldScores[0];
+        for (const s of oldScores) {
           await db.insert(scores)
             .values({ name, avatar, game: s.game, score: s.score, ts: s.ts })
             .onDuplicateKeyUpdate({ set: { avatar, score: s.score, ts: s.ts } });
+        }
+        if (oldScores.length > 0) {
           await db.delete(scores).where(eq(scores.name, oldName));
         }
         // works 테이블의 owner 이름도 갱신

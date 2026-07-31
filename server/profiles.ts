@@ -26,6 +26,9 @@ export function registerProfileRoutes(app: Express) {
       await db.execute(
         "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '', pin VARCHAR(4) DEFAULT NULL)"
       );
+      await db.execute(
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pin VARCHAR(4) DEFAULT NULL"
+      );
       const rows = await db.execute("SELECT name, avatar, pin FROM profiles ORDER BY name");
       res.json({ profiles: rows });
     } catch (error) {
