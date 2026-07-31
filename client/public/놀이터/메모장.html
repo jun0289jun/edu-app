@@ -63,7 +63,15 @@
     a.unshift({id:currentId, text:ed.value});
     if(setMemos(a)){ KID.good(); toast('💾 저장했어요!');
       // 서버 백업 (프로필이 설정된 경우에만, 실패해도 무시)
-      KID._selfSave('memo',ed.value,currentId,t.split('\n')[0].slice(0,40),null);
+      (function(savedId){
+        KID._selfSave('memo',ed.value,savedId,t.split('\n')[0].slice(0,40),function(ok,serverId){
+          if(ok&&serverId!=null&&String(serverId)!==String(savedId)){
+            var arr=getMemos();
+            for(var i=0;i<arr.length;i++){ if(String(arr[i].id)===String(savedId)){ arr[i].id=serverId; break; } }
+            setMemos(arr); if(String(currentId)===String(savedId)) currentId=serverId;
+          }
+        });
+      })(currentId);
     } else { currentId=null; }
   };
   document.getElementById('load').onclick=function(){ KID.click(); renderList(); document.getElementById('modal').classList.add('on'); };

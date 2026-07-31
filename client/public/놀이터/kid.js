@@ -267,12 +267,14 @@ window.KID = (function(){
     // 저장: 나만 볼 수 있는 작품을 서버 DB에 백업 (recipients=[] = 공유 없음)
     _selfSave:function(type,content,id,title,cb){
       var p=this.profile();
-      if(!p||!p.name||!this.WORKS_URL){if(cb)cb(false);return;}
+      if(!p||!p.name||!this.WORKS_URL){if(cb)cb(false,null);return;}
       try{fetch(this.WORKS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
         body:JSON.stringify({id:String(id),owner:p.name,ownerAvatar:p.avatar||'🐥',
           type:type,title:title||'',content:content,recipients:[],ts:Date.now()})})
-        .then(function(r){if(cb)cb(r.ok);}).catch(function(){if(cb)cb(false);});}
-      catch(e){if(cb)cb(false);}
+        .then(function(r){if(!r.ok)throw 0;return r.json();})
+        .then(function(j){if(cb)cb(true,j&&j.id!=null?j.id:null);})
+        .catch(function(){if(cb)cb(false,null);});}
+      catch(e){if(cb)cb(false,null);}
     },
     // 로드: 서버에서 내가 저장한 작품 목록 반환
     _selfLoad:function(type,cb){

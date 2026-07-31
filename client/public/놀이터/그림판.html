@@ -100,7 +100,15 @@
     var snap=snapshot(); a.unshift({id:currentId,img:snap}); setDraws(a); KID.good(); toast('💾 저장했어요!');
     // 서버 백업 (프로필이 설정된 경우에만, 실패해도 무시)
     var savedId=currentId;
-    KID._compressImage(snap,function(c){ KID._selfSave('drawing',c,savedId,'내 그림',null); });
+    KID._compressImage(snap,function(c){
+      KID._selfSave('drawing',c,savedId,'내 그림',function(ok,serverId){
+        if(ok&&serverId!=null&&String(serverId)!==String(savedId)){
+          var arr=getDraws();
+          for(var i=0;i<arr.length;i++){ if(String(arr[i].id)===String(savedId)){ arr[i].id=serverId; break; } }
+          setDraws(arr); if(String(currentId)===String(savedId)) currentId=serverId;
+        }
+      });
+    });
   };
   document.getElementById('mine').onclick=function(){ KID.click(); renderGal(); document.getElementById('modal').classList.add('on'); };
   document.getElementById('inbox').onclick=function(){ KID.openInbox('drawing',function(w){

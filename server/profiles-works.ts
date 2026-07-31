@@ -146,15 +146,32 @@ export function registerProfilesWorksRoutes(app: Express) {
 
   // ── POST /api/works ─────────────────────────────────────────────────────────
   // body (text/plain JSON): { owner, ownerAvatar, type, title, content, recipients[], ts }
+  // body (action='delete'): { action, id, owner }
   app.post("/api/works", async (req, res) => {
     setCors(res);
     try {
       let body: {
         owner?: string; ownerAvatar?: string; type?: string;
         title?: string; content?: string; recipients?: string[]; ts?: number;
+        action?: string; id?: string | number;
       };
       try { body = typeof req.body === "string" ? JSON.parse(req.body) : req.body; }
       catch { res.status(400).json({ ok: false, error: "invalid json" }); return; }
+
+      const db = await getDb();
+      if (!db) { res.json({ ok: true, id: 0 }); return; }
+
+      // 작품 삭제 (그림판/메모장에서 🗑️ 클릭)
+      if (String(body.action || "") === "delete") {
+        const workId = parseInt(String(body.id ?? ""), 10);
+        const ownerName = String(body.owner || "").slice(0, 32).trim();
+        if (workId && ownerName) {
+          const { and, eq } = await import("drizzle-orm");
+          await db.delete(works).where(and(eq(works.id, workId), eq(works.owner, ownerName)));
+        }
+        res.json({ ok: true });
+        return;
+      }
 
       const owner = String(body.owner || "").slice(0, 32).trim();
       const type = String(body.type || "").slice(0, 32).trim();
@@ -164,9 +181,6 @@ export function registerProfilesWorksRoutes(app: Express) {
         res.status(400).json({ ok: false, error: "owner, type, content required" });
         return;
       }
-
-      const db = await getDb();
-      if (!db) { res.json({ ok: true, id: 0 }); return; }
 
       const result = await db.insert(works).values({
         owner,
@@ -204,7 +218,7 @@ export function registerProfilesWorksRoutes(app: Express) {
       // recipients는 JSON 배열 문자열 — LIKE로 포함 여부 확인 (간단 구현)
       const rows = await db.select().from(works)
         .where(
-          sql`${works.type} = ${type} AND JSON_CONTAINS(${works.recipients}, JSON_QUOTE(${profile}))`
+          sql`${works.type} = ${type} AND (${works.owner} = ${profile} OR JSON_CONTAINS(${works.recipients}, JSON_QUOTE(${profile})))`
         )
         .orderBy(sql`${works.ts} DESC`)
         .limit(100);
