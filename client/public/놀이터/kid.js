@@ -64,9 +64,9 @@ window.KID = (function(){
 
     // ===== 온라인 랭킹 (리더보드) =====
     // ▼ Manus가 만든 API 주소를 여기에 넣으세요. 비어있으면 오프라인(로컬 기록만).
-    LB_URL:'https://edu-app.manus.space/api/leaderboard',
-    PROFILES_URL:'https://edu-app.manus.space/api/profiles',   // 프로필 목록(있으면 사용, 없으면 랭킹에서 유추)
-    WORKS_URL:'https://edu-app.manus.space/api/works',
+    LB_URL:'/api/leaderboard',
+    PROFILES_URL:'/api/profiles',   // 프로필 목록(있으면 사용, 없으면 랭킹에서 유추)
+    WORKS_URL:'/api/works',
     // API 규격:
     //  POST 본문(text/plain, JSON): {name, avatar, game, score, ts}  → (name,game)별 '최고점'만 남기고 갱신
     //  GET  응답(JSON): { games: { <게임키>: [ {name,avatar,score}, ... 점수 내림차순 ] , ... } }
@@ -117,9 +117,11 @@ window.KID = (function(){
     }catch(e){if(cb)cb(false);} },
     // 서버 친구목록 조회. 전용 엔드포인트 없으면 랭킹 데이터에서 유추. 로컬과 병합(이름 dedupe).
     fetchProfiles:function(cb){ var self=this, local=this.profiles();
-      function merge(serverList){ var map={}, out=[];
-        (serverList||[]).forEach(function(p){ if(p&&p.name&&!map[p.name]){ map[p.name]=1; out.push({name:p.name,avatar:p.avatar||'🐥'}); } });
-        local.forEach(function(p){ if(p&&p.name&&!map[p.name]){ map[p.name]=1; out.push({name:p.name,avatar:p.avatar||'🐥'}); } });
+      function merge(serverList){ var map={}, smap={}, out=[];
+        (serverList||[]).forEach(function(p){ if(p&&p.name&&!map[p.name]){ map[p.name]=1; smap[p.name]=1; out.push({name:p.name,avatar:p.avatar||'🐥',pin:p.pin||null}); } });
+        local.forEach(function(p){ if(p&&p.name&&!map[p.name]){ map[p.name]=1; out.push({name:p.name,avatar:p.avatar||'🐥',pin:p.pin||null});
+          if(!smap[p.name] && location.protocol!=='file:') self.saveProfileServer(p.name,p.avatar||'🐥','',null);
+        } });
         cb(out); }
       function derive(){ self.fetchRanks(function(d){ var list=[],seen={},g=(d&&d.games)||{};
         Object.keys(g).forEach(function(k){ (g[k]||[]).forEach(function(r){ if(r&&r.name&&!seen[r.name]){ seen[r.name]=1; list.push({name:r.name,avatar:r.avatar||'🐥'}); } }); });

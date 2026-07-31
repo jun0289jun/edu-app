@@ -6,8 +6,8 @@
 <title>한영바구니</title>
 <link rel="stylesheet" href="kid.css">
 <style>
-  #lv{display:flex;gap:8px;justify-content:center;padding:0 10px 4px;}
-  #lv .btn{font-size:16px;padding:9px 14px;} #lv .btn.on{background:#ffd54a;}
+  #slv{display:flex;gap:8px;justify-content:center;padding:0 10px 4px;}
+  #slv .btn{font-size:15px;padding:7px 12px;} #slv .btn.on{background:#a5d6ff;}
   #hud{display:flex;gap:16px;justify-content:center;font-size:20px;font-weight:800;padding:2px;}
   #wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:6px;}
   canvas{background:linear-gradient(#eef6ff,#eafaf0);border-radius:16px;box-shadow:inset 0 0 0 4px #fff,0 6px 18px #0003;touch-action:none;}
@@ -19,14 +19,18 @@
   #over{position:fixed;inset:0;background:#000a;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:5;}
   #over.on{display:flex;} #over .big{font-size:34px;font-weight:800;}
   #over .btn-home{background:#fff3;color:#fff;font-size:20px;text-decoration:none;padding:12px 28px;border-radius:16px;}
+  @keyframes lvpop{0%{opacity:0;transform:scale(.5);}25%{opacity:1;transform:scale(1.1);}40%{transform:scale(1);}80%{opacity:1;}100%{opacity:0;}}
+  #lvup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:15;}
+  #lvup.on{display:flex;animation:lvpop 1s forwards;}
+  #lvup .badge{background:#ffb300;color:#fff;font-size:40px;font-weight:900;padding:14px 36px;border-radius:20px;white-space:nowrap;}
 </style>
 </head>
 <body>
   <div class="topbar"><a class="home" href="게임.html">🏠 게임</a><span class="title">🔤 한영바구니</span></div>
-  <div id="lv">
-    <button class="btn on" data-n="2">🟢 쉬움(2칸)</button>
-    <button class="btn" data-n="3">🟡 보통(3칸)</button>
-    <button class="btn" data-n="5">🔴 어려움(5칸)</button>
+  <div id="slv">
+    <button class="btn on" data-s="0">🐣 LV 0 (처음부터)</button>
+    <button class="btn" data-s="3">🐤 LV 3 (보통부터)</button>
+    <button class="btn" data-s="6">🦅 LV 6 (하드모드)</button>
   </div>
   <div id="hud"><span id="score">⭐ 0</span><span id="life">❤️❤️❤️</span><span id="hi">🏆 0</span></div>
   <div id="wrap"><canvas id="cv"></canvas></div>
@@ -37,31 +41,40 @@
     <button class="mv" data-d="1">➡️</button>
   </div>
   <div id="over"><div class="big" id="ovtxt"></div><button class="btn" id="again" style="background:#8be78b;font-size:24px">다시 하기 ▶</button><a class="btn-home" href="게임.html">🏠 게임 목록</a></div>
-<script src="kid.js?v=3"></script>
+  <div id="lvup"><div class="badge"></div></div>
+<script src="kid.js?v=4"></script>
 <script>
 (function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   if(!ctx.roundRect){ ctx.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); return this; }; }
-  var W,H,lanes=2,lane,items,score,lives,mode,spawnT,speed,playing,raf;
+  var W,H,lanes=2,lane,items,score,lives,mode,spawnT,speed,playing,raf,tier,startTier=0;
   var KO='가나다라마바사아자차카타파하고노도무리버'.split(''), EN='ABCDEFGHJKLMNPRSTUW'.split('');
-  var SPEED={2:0.3,3:0.5,5:0.9}, SPAWN={2:600,3:420,5:260};
+  var DECOY='あいうえかきくけさしすせたちつてなにぬねはひふへ'.split('');
+  var SPEED={2:0.3,3:0.5,4:0.65,5:0.9}, SPAWN={2:600,3:420,4:340,5:260};
   function resize(){ var wrap=document.getElementById('wrap'); W=Math.max(280,wrap.clientWidth-8); H=Math.max(240,wrap.clientHeight-8); cv.width=W; cv.height=H; }
   window.addEventListener('resize',function(){ resize(); });
   function laneX(i){ return (i+0.5)/lanes*W; }
   function laneW(){ return W/lanes; }
-  function start(){ resize(); lane=Math.floor(lanes/2); items=[]; score=0; lives=3; mode='ko'; spawnT=0; speed=SPEED[lanes]; playing=true;
+  function showLevelUp(txt){ var el=document.getElementById('lvup'); el.querySelector('.badge').textContent='🚀 '+txt; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); KID.good(); }
+  function tieredLanes(t){ return t>=6?4:t>=3?3:2; }
+  function start(){ resize(); lanes=tieredLanes(startTier); lane=Math.floor(lanes/2); items=[]; score=0; lives=3; mode='ko'; spawnT=0; speed=SPEED[lanes]*Math.pow(1.05,Math.min(startTier,6)*10); playing=true; tier=startTier;
     document.getElementById('over').classList.remove('on'); document.getElementById('hi').textContent='🏆 '+KID.hiGet('kobasket');
     updHud(); cancelAnimationFrame(raf); loop(); }
   function updHud(){ document.getElementById('score').textContent='⭐ '+score; document.getElementById('life').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives); }
   function basketY(){ return H-52; }
-  function spawn(){ var ko=Math.random()<0.5; items.push({lane:Math.floor(Math.random()*lanes), y:-20,
-    ch: ko?KO[Math.floor(Math.random()*KO.length)]:EN[Math.floor(Math.random()*EN.length)], lang: ko?'ko':'en', v:speed}); }
+  function spawn(){ var decoyP=tier>=4?Math.min(0.1*(tier-3),0.4):0, r=Math.random();
+    var lang=r<decoyP?'decoy':(Math.random()<0.5?'ko':'en');
+    var arr=lang==='decoy'?DECOY:lang==='ko'?KO:EN;
+    items.push({lane:Math.floor(Math.random()*lanes), y:-20, ch:arr[Math.floor(Math.random()*arr.length)], lang:lang, v:speed}); }
   function toggleMode(){ mode=(mode==='ko')?'en':'ko'; KID.pop(); }
   function step(){
-    spawnT--; if(spawnT<=0){ spawn(); spawnT=Math.max(15,Math.round(SPAWN[lanes]/Math.pow(1.08,Math.floor(score/10)*10))); }
+    spawnT--; if(spawnT<=0){ spawn(); spawnT=Math.max(15,Math.round(SPAWN[lanes]/Math.pow(1.05,Math.min(Math.floor(score/20)+startTier,6)*10))); }
     for(var i=items.length-1;i>=0;i--){ var b=items[i]; b.y+=b.v;
-      if(b.y>basketY()-30 && b.y<basketY()+18 && b.lane===lane && b.lang===mode){ items.splice(i,1); score++; KID.star(); speed=SPEED[lanes]*Math.pow(1.08,Math.floor(score/10)*10); updHud(); continue; }
-      if(b.y>H-16){ items.splice(i,1); lives--; KID.bad(); updHud(); if(lives<=0){ return gameOver(); } } }
+      if(b.y>basketY()-30 && b.y<basketY()+18 && b.lane===lane && b.lang==='decoy'){ items.splice(i,1); lives--; KID.bad(); updHud(); if(lives<=0){ return gameOver(); } continue; }
+      if(b.y>basketY()-30 && b.y<basketY()+18 && b.lane===lane && b.lang===mode){ items.splice(i,1); score++; var t=Math.floor(score/20)+startTier; KID.star(); speed=SPEED[lanes]*Math.pow(1.05,Math.min(t,6)*10);
+        if(t>tier){ var pl=lanes; tier=t; lanes=tieredLanes(t); lane=Math.floor(lanes/2); items.length=0; updHud(); showLevelUp(lanes!==pl?lanes+'칸!':'LV '+t+'!'); break; } updHud(); continue; }
+      if(b.y>H-16 && b.lang!=='decoy'){ items.splice(i,1); lives--; KID.bad(); updHud(); if(lives<=0){ return gameOver(); } }
+      if(b.y>H-16 && b.lang==='decoy'){ items.splice(i,1); } }
     render(); if(playing) raf=requestAnimationFrame(step);
   }
   function loop(){ raf=requestAnimationFrame(step); }
@@ -71,7 +84,7 @@
     ctx.strokeStyle='#cfe0ff'; ctx.lineWidth=2;
     for(var i=1;i<lanes;i++){ ctx.beginPath(); ctx.moveTo(i/lanes*W,0); ctx.lineTo(i/lanes*W,H); ctx.stroke(); }
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    items.forEach(function(b){ ctx.font='bold 36px sans-serif'; ctx.fillStyle=(b.lang==='ko')?'#2a63d6':'#e07b1a'; ctx.fillText(b.ch, laneX(b.lane), b.y); });
+    items.forEach(function(b){ ctx.font='bold 36px sans-serif'; ctx.fillStyle=(b.lang==='ko')?'#2a63d6':(b.lang==='en')?'#e07b1a':'#cc2222'; ctx.fillText(b.ch, laneX(b.lane), b.y); });
     var by=basketY(), koMode=(mode==='ko'), bw=Math.min(laneW()*0.82,140), bx=laneX(lane);
     ctx.fillStyle=koMode?'#2a63d6':'#e07b1a'; ctx.beginPath(); ctx.roundRect(bx-bw/2,by-26,bw,52,14); ctx.fill();
     ctx.fillStyle='#fff'; ctx.font='bold 32px sans-serif'; ctx.fillText(koMode?'한':'A', bx, by);
@@ -86,8 +99,8 @@
     else if(e.code==='Lang1'||e.code==='Lang2'||e.key==='HangulMode'||e.keyCode===21||e.keyCode===25){ e.preventDefault(); toggleMode(); } });
   document.querySelectorAll('#ctrl .mv').forEach(function(b){ b.addEventListener('click',function(){ moveLane(parseInt(b.dataset.d,10)); }); });
   document.getElementById('toggle').addEventListener('click',toggleMode);
-  document.querySelectorAll('#lv .btn').forEach(function(b){ b.onclick=function(){ KID.click(); lanes=parseInt(b.dataset.n,10);
-    document.querySelectorAll('#lv .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); start(); }; });
+  document.querySelectorAll('#slv .btn').forEach(function(b){ b.onclick=function(){ KID.click(); startTier=parseInt(b.dataset.s,10);
+    document.querySelectorAll('#slv .btn').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); start(); }; });
   document.getElementById('again').addEventListener('click',function(){ KID.pop(); start(); });
   start();
 })();

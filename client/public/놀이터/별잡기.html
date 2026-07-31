@@ -39,7 +39,7 @@
     <button class="up" data-d="U">⬆️</button><button class="left" data-d="L">⬅️</button>
     <button class="right" data-d="R">➡️</button><button class="down" data-d="D">⬇️</button>
   </div>
-<script src="kid.js?v=3"></script>
+<script src="kid.js?v=4"></script>
 <script>
 (function(){
   var COLS=9, ROWS=7;
@@ -63,7 +63,7 @@
   function newStar(){ var cells=reachableCells(); if(!cells.length){ walls=[]; drawWalls(); cells=reachableCells(); }
     var e=cells[Math.floor(Math.random()*cells.length)]; sx=e[0]; sy=e[1];
     // 시작은 여유있게, 점수 오를수록 점점 빨라짐(완만하게)
-    starTime=Math.max(1.8, 15 - Math.floor(score/10)*1.2); starLeft=starTime; draw(); updBar(); }
+    starTime=Math.max(0.3, 15 - Math.floor(score/10)*1.2); starLeft=starTime; draw(); updBar(); }
   function updHud(){ document.getElementById('score').textContent='⭐ '+score;
     document.getElementById('life').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives); }
   function updBar(){ document.getElementById('fill').style.width=Math.max(0,starLeft/starTime*100)+'%'; }

@@ -1,4 +1,5 @@
 import { bigint, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -99,6 +100,7 @@ export const profiles = mysqlTable("profiles", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 32 }).notNull().unique(),
   avatar: varchar("avatar", { length: 16 }).notNull().default("🐥"),
+  pin: varchar("pin", { length: 4 }).default(sql`NULL`),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

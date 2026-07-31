@@ -24,9 +24,9 @@ export function registerProfileRoutes(app: Express) {
     try {
       const db = connect({ url: process.env.DATABASE_URL });
       await db.execute(
-        "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '')"
+        "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '', pin VARCHAR(4) DEFAULT NULL)"
       );
-      const rows = await db.execute("SELECT name, avatar FROM profiles ORDER BY name");
+      const rows = await db.execute("SELECT name, avatar, pin FROM profiles ORDER BY name");
       res.json({ profiles: rows });
     } catch (error) {
       console.error("[Profiles GET]", error);
@@ -46,11 +46,32 @@ export function registerProfileRoutes(app: Express) {
         if (!delName) return res.status(400).json({ error: "name required" });
         const db = connect({ url: process.env.DATABASE_URL });
         await db.execute(
-          "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '')"
+          "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '', pin VARCHAR(4) DEFAULT NULL)"
         );
         await db.execute("DELETE FROM profiles WHERE name = ?", [delName]);
         try { await db.execute("DELETE FROM scores WHERE name = ?", [delName]); } catch {}
         try { await db.execute("DELETE FROM works WHERE owner = ?", [delName]); } catch {}
+        return res.json({ ok: true });
+      }
+
+      // PIN 설정/제거
+      if (String(data.action ?? "") === "setPin") {
+        const pinName = String(data.name ?? "").trim().slice(0, 12);
+        const newPin = data.pin ? String(data.pin).replace(/\D/g, "").slice(0, 4) : null;
+        if (!pinName) return res.status(400).json({ error: "name required" });
+        const db = connect({ url: process.env.DATABASE_URL });
+        await db.execute(
+          "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '', pin VARCHAR(4) DEFAULT NULL)"
+        );
+        await db.execute("UPDATE profiles SET pin = ? WHERE name = ?", [newPin, pinName]);
+        return res.json({ ok: true });
+      }
+
+      // 전체 초기화 (점수 + 작품)
+      if (String(data.action ?? "") === "resetAll") {
+        const db = connect({ url: process.env.DATABASE_URL });
+        try { await db.execute("DELETE FROM scores"); } catch {}
+        try { await db.execute("DELETE FROM works"); } catch {}
         return res.json({ ok: true });
       }
 
@@ -61,7 +82,7 @@ export function registerProfileRoutes(app: Express) {
 
       const db = connect({ url: process.env.DATABASE_URL });
       await db.execute(
-        "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '')"
+        "CREATE TABLE IF NOT EXISTS profiles (name VARCHAR(16) PRIMARY KEY, avatar VARCHAR(16) NOT NULL DEFAULT '', pin VARCHAR(4) DEFAULT NULL)"
       );
 
       if (oldName && oldName !== name) {

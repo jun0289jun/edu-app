@@ -49,6 +49,23 @@
   #pcreate .row{display:flex;gap:8px;margin-top:12px;}
   #pguest{width:100%;margin-top:14px;background:transparent;box-shadow:none;border:none;color:#8a8a8a;
     font-size:16px;font-weight:800;text-decoration:underline;padding:8px;cursor:pointer;}
+  #psearch{width:100%;font-size:17px;padding:8px 12px;border-radius:12px;border:2px solid #ddd;box-sizing:border-box;margin-bottom:8px;display:none;}
+  #ppin{width:100%;font-size:20px;font-weight:800;text-align:center;padding:10px;border-radius:14px;border:3px solid #ddd;box-sizing:border-box;letter-spacing:8px;margin-top:8px;}
+  #padmin-panel{margin-top:12px;background:#fff5e6;border-radius:16px;padding:14px;display:none;text-align:center;}
+  #pmod{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:30;}
+  #pmod.on{display:flex;}
+  .pm-box{background:#fff;border-radius:24px;padding:24px 20px;width:min(90vw,300px);text-align:center;}
+  #pm-who{font-size:20px;font-weight:900;margin-bottom:8px;}
+  #pm-dots{display:flex;justify-content:center;gap:18px;margin:12px 0 4px;}
+  #pm-dots span{width:16px;height:16px;border-radius:50%;background:#ddd;transition:background .1s;}
+  #pm-dots span.on{background:#5b6cf0;}
+  #pm-err{color:#e05050;font-size:13px;font-weight:800;min-height:18px;margin-bottom:8px;}
+  #pm-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  #pm-pad button{font-size:26px;font-weight:800;border:none;border-radius:14px;background:#f2f4f8;padding:13px 0;cursor:pointer;}
+  #pm-pad button:active{background:#dce0ff;}
+  #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#333c;color:#fff;font-size:17px;font-weight:800;
+    padding:11px 24px;border-radius:20px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:99;}
+  #toast.on{opacity:1;}
 </style>
 </head>
 <body>
@@ -65,11 +82,18 @@
   </div>
   <div id="pick"><div class="panel">
     <h2 id="ptitle">누구야? 🙂</h2>
+    <input id="psearch" type="search" placeholder="🔍 이름 검색…" autocomplete="off">
     <div id="plist"></div>
     <button class="btn" id="pnew">➕ 새 친구 만들기</button>
+    <div id="padmin-panel">
+      <div style="font-weight:900;margin-bottom:10px">🔐 관리자 메뉴</div>
+      <button class="btn" id="preset" style="width:100%;background:#ff9db0;color:#fff;margin-bottom:8px">🗑️ 전체 초기화 (점수·메모·그림·사진)</button>
+      <button class="btn" id="padmin-close" style="width:100%;background:#eee;color:#555">닫기</button>
+    </div>
     <div id="pcreate" style="display:none">
       <div id="avs"></div>
       <input id="pname" maxlength="12" placeholder="이름 (예: 하준)">
+      <input id="ppin" type="tel" maxlength="4" placeholder="🔒 비밀번호 4자리 (없으면 빈칸)">
       <div class="row">
         <button class="btn" id="pback" style="flex:0 0 auto">⬅</button>
         <button class="btn" id="psave" style="flex:1">저장 ✅</button>
@@ -78,7 +102,19 @@
     </div>
     <button id="pguest">프로필 없이 그냥 놀기 →</button>
   </div></div>
-<script src="kid.js?v=3"></script>
+  <div id="toast"></div>
+  <div id="pmod"><div class="pm-box">
+    <div id="pm-who"></div>
+    <div id="pm-dots"><span></span><span></span><span></span><span></span></div>
+    <div id="pm-err"></div>
+    <div id="pm-pad">
+      <button>1</button><button>2</button><button>3</button>
+      <button>4</button><button>5</button><button>6</button>
+      <button>7</button><button>8</button><button>9</button>
+      <button>⌫</button><button>0</button><button>✕</button>
+    </div>
+  </div></div>
+<script src="kid.js?v=4"></script>
 <script>
 (function(){
   document.querySelectorAll('a.tile').forEach(function(t){
@@ -91,6 +127,12 @@
       plist=document.getElementById('plist'), pcreate=document.getElementById('pcreate'),
       pnew=document.getElementById('pnew'), ptitle=document.getElementById('ptitle'),
       pdel=document.getElementById('pdel'), chosen='🐥', editOld='';
+  var psearch=document.getElementById('psearch'), ppin=document.getElementById('ppin');
+  var pmod=document.getElementById('pmod'), pmWho=document.getElementById('pm-who'),
+      pmErr=document.getElementById('pm-err'), pmDots=document.querySelectorAll('#pm-dots span');
+  var allProfiles=[], pmBuf='', pmCb=null, pmProf=null;
+  var toastTimer;
+  function toast(msg){ var el=document.getElementById('toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(toastTimer); toastTimer=setTimeout(function(){ el.classList.remove('on'); },2200); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   AV.forEach(function(a){ var b=document.createElement('button'); b.textContent=a;
     b.onclick=function(){ KID.click(); selAvatar(a); }; avs.appendChild(b); });
@@ -102,27 +144,35 @@
     plist.innerHTML='';
     (list||[]).forEach(function(p){
       var row=document.createElement('div'); row.className='pf';
-      row.innerHTML='<button class="pickpf" type="button"><span class="av">'+esc(p.avatar)+'</span><span>'+esc(p.name)+'</span></button><button class="edit" type="button" aria-label="프로필 바꾸기">✏️</button>';
-      row.querySelector('.pickpf').onclick=function(){ KID.setProfile(p.name,p.avatar); KID.good(); closePick(); };
-      row.querySelector('.edit').onclick=function(){ KID.click(); showEdit(p); };
+      row.innerHTML='<button class="pickpf" type="button"><span class="av">'+esc(p.avatar)+'</span><span>'+esc(p.name)+'</span>'+(p.pin?'<span style="font-size:14px;opacity:.45;margin-left:4px">🔒</span>':'')+' </button><button class="edit" type="button" aria-label="프로필 바꾸기">✏️</button>';
+      row.querySelector('.pickpf').onclick=function(){
+        if(p.pin){ openPmod(p,function(){ KID.setProfile(p.name,p.avatar); KID.good(); closePick(); }); }
+        else { KID.setProfile(p.name,p.avatar); KID.good(); closePick(); }
+      };
+      row.querySelector('.edit').onclick=function(){ KID.click();
+        if(p.pin){ openPmod(p,function(r){ if(r==='ok'||r==='admin') showEdit(p); }); }
+        else { showEdit(p); } };
       plist.appendChild(row);
     });
-    var has=list&&list.length;
-    plist.style.display=has?'flex':'none';
-    pnew.style.display=has?'block':'none';
-    if(!has) showCreate();
+    var has=list&&list.length, searching=psearch.value.trim().length>0;
+    plist.style.display=(has||searching)?'flex':'none';
+    if(!has && searching) plist.innerHTML='<div style="text-align:center;color:#bbb;font-weight:800;padding:16px">검색 결과 없음</div>';
+    pnew.style.display=allProfiles.length?'block':'none';
+    psearch.style.display=allProfiles.length?'block':'none';
+    if(!allProfiles.length) showCreate();
   }
   function showList(){ editOld=''; ptitle.textContent='누구야? 🙂'; pcreate.style.display='none';
+    document.getElementById('padmin-panel').style.display='none';
+    psearch.value=''; psearch.style.display='none';
     plist.innerHTML='<div style="text-align:center;color:#999;font-weight:800;padding:16px">불러오는 중… ⏳</div>';
     plist.style.display='flex'; pnew.style.display='none';
-    // 안전장치: fetchProfiles 없거나(옛 캐시) 응답 늦으면 로컬 목록으로 폴백 → 절대 안 멈춤
-    if(typeof KID.fetchProfiles!=='function'){ renderList(KID.profiles()); return; }
-    var done=false, to=setTimeout(function(){ if(!done){ done=true; renderList(KID.profiles()); } },4000);
-    KID.fetchProfiles(function(list){ if(done)return; done=true; clearTimeout(to); renderList(list); }); }   // 서버 친구목록(어느 기기든 동일)
+    if(typeof KID.fetchProfiles!=='function'){ allProfiles=KID.profiles()||[]; renderList(allProfiles); return; }
+    var done=false, to=setTimeout(function(){ if(!done){ done=true; allProfiles=KID.profiles()||[]; renderList(allProfiles); } },4000);
+    KID.fetchProfiles(function(list){ if(done)return; done=true; clearTimeout(to); allProfiles=list||[]; renderList(allProfiles); }); }
   function showCreate(){ pcreate.style.display='block'; plist.style.display='none'; pnew.style.display='none';
-    editOld=''; ptitle.textContent='새 친구 만들기'; pname.value=''; selAvatar('🐥'); pdel.style.display='none'; }
+    editOld=''; ptitle.textContent='새 친구 만들기'; pname.value=''; ppin.value=''; selAvatar('🐥'); pdel.style.display='none'; }
   function showEdit(p){ pcreate.style.display='block'; plist.style.display='none'; pnew.style.display='none';
-    editOld=p.name; ptitle.textContent='프로필 바꾸기 ✏️'; pname.value=p.name; selAvatar(p.avatar||'🐥'); pdel.style.display='block'; pname.focus(); }
+    editOld=p.name; ptitle.textContent='프로필 바꾸기 ✏️'; pname.value=p.name; ppin.value=p.pin||''; selAvatar(p.avatar||'🐥'); pdel.style.display='block'; pname.focus(); }
   function openPick(){ pick.classList.add('on'); KID.pop(); showList(); }
   function closePick(){ pick.classList.remove('on'); updBadge(); try{ sessionStorage.setItem('kid_picked','1'); }catch(e){} }
 
@@ -137,16 +187,85 @@
   };
   document.getElementById('pguest').onclick=function(){ KID.click(); closePick(); };  // 프로필 없이 체험(점수 랭킹 미반영)
   pick.onclick=function(e){ if(e.target.id==='pick' && KID.profile()) closePick(); };  // 프로필 있을 때만 배경탭 닫기
+  function savePin(name,pin){
+    if(location.protocol==='file:') return;
+    fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'setPin',name:name,pin:pin||null})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if(!j.ok) toast('⚠️ 비밀번호 서버 저장 실패'); })
+    .catch(function(){});
+  }
   document.getElementById('psave').onclick=function(){
     var nm=pname.value.trim(); if(!nm){ pname.focus(); return; }
+    var pin=ppin.value.trim();
+    if(pin && !/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리예요!'); ppin.focus(); return; }
     if(editOld){
       var old=editOld;
       KID.renameProfile(old,nm,chosen,function(ok){
+        savePin(nm, pin!==''?pin:null);
         KID.good(); closePick();
-        if(!ok) setTimeout(function(){ alert('이 기기에서는 바뀌었어요. 온라인 랭킹 연결은 다시 확인해 주세요.'); },100);
+        toast(ok?'✅ 저장됐어요':'⚠️ 이 기기에서만 저장됐어요');
       });
-    }else{ KID.setProfile(nm,chosen); KID.good(); closePick(); }
+    }else{
+      KID.setProfile(nm,chosen);
+      if(pin) setTimeout(function(){ savePin(nm, pin); },300);
+      KID.good(); closePick();
+      toast('✅ '+nm+' 만들었어요');
+    }
   };
+
+  // ── PIN 모달 ──
+  function openPmod(prof,cb){
+    pmProf=prof; pmCb=cb; pmBuf=''; pmErr.textContent='';
+    pmWho.textContent=(prof?prof.avatar+' '+prof.name:'관리자')+' 🔒';
+    updPmDots(); pmod.classList.add('on');
+  }
+  function closePmod(){ pmod.classList.remove('on'); pmBuf=''; pmCb=null; pmProf=null; }
+  function updPmDots(){ pmDots.forEach(function(d,i){ d.classList.toggle('on',i<pmBuf.length); }); }
+  function pmPress(n){
+    if(n==='✕'){ KID.click(); closePmod(); return; }
+    if(n==='⌫'){ pmBuf=pmBuf.slice(0,-1); pmErr.textContent=''; updPmDots(); return; }
+    if(pmBuf.length>=4) return;
+    pmBuf+=n; updPmDots();
+    if(pmBuf.length===4) setTimeout(pmCheck,80);
+  }
+  function pmCheck(){
+    if(pmBuf==='1234'){ KID.good(); var cb=pmCb; closePmod(); if(cb)cb('admin'); return; }
+    if(pmProf&&pmProf.pin&&pmBuf===pmProf.pin){ KID.good(); var cb=pmCb; closePmod(); if(cb)cb('ok'); return; }
+    KID.bad(); pmErr.textContent='비밀번호가 틀렸어요 ❌'; pmBuf=''; updPmDots();
+  }
+  document.querySelectorAll('#pm-pad button').forEach(function(b){
+    b.addEventListener('click',function(){ pmPress(b.textContent.trim()); });
+  });
+
+  // ── 검색 ──
+  psearch.addEventListener('input',function(){
+    var q=psearch.value.toLowerCase().trim();
+    renderList(q?allProfiles.filter(function(p){ return p.name.toLowerCase().includes(q); }):allProfiles);
+  });
+
+  // ── 관리자 ──
+  pnew.addEventListener('click',function(e){
+    // 🔐 버튼 역할: pnew 옆 텍스트 없이 별도 버튼 추가 대신 장기 탭 인식
+  });
+  (function(){
+    var t; pnew.addEventListener('pointerdown',function(){ t=setTimeout(function(){ KID.click(); openPmod(null,function(r){ if(r==='admin') document.getElementById('padmin-panel').style.display='block'; }); },1500); });
+    pnew.addEventListener('pointerup',function(){ clearTimeout(t); });
+    pnew.addEventListener('pointerleave',function(){ clearTimeout(t); });
+  })();
+  document.getElementById('padmin-close').addEventListener('click',function(){
+    KID.click(); document.getElementById('padmin-panel').style.display='none';
+  });
+  document.getElementById('preset').addEventListener('click',function(){
+    if(!confirm('점수, 메모, 그림, 사진을 모두 초기화합니다.\n정말 진행하시겠어요?')) return;
+    fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'resetAll'})})
+    .then(function(r){ return r.json(); })
+    .then(function(){
+      try{ Object.keys(localStorage).filter(function(k){ return k.startsWith('kid_hi')||k==='kid_shared_works'||k==='memos'||k==='draws'||k==='photos'; }).forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+      KID.fanfare(); alert('초기화 완료!'); document.getElementById('padmin-panel').style.display='none'; })
+    .catch(function(){ alert('오류가 발생했어요.'); });
+  });
 
   updBadge();
   // 세션 첫 홈 진입이면 '누구야?' 열기 (형제·조카가 고르도록)

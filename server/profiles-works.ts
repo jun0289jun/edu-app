@@ -26,13 +26,13 @@ export function registerProfilesWorksRoutes(app: Express) {
   app.options("/api/works", (_, res) => { setCors(res); res.sendStatus(204); });
 
   // ── GET /api/profiles ───────────────────────────────────────────────────────
-  // 응답: { profiles: [{name, avatar}] }
+  // 응답: { profiles: [{name, avatar, pin}] }
   app.get("/api/profiles", async (_req, res) => {
     setCors(res);
     try {
       const db = await getDb();
       if (!db) { res.json({ profiles: [] }); return; }
-      const rows = await db.select({ name: profiles.name, avatar: profiles.avatar })
+      const rows = await db.select({ name: profiles.name, avatar: profiles.avatar, pin: profiles.pin })
         .from(profiles)
         .orderBy(profiles.updatedAt);
       res.json({ profiles: rows });
@@ -70,22 +70,39 @@ export function registerProfilesWorksRoutes(app: Express) {
   app.post("/api/profiles", async (req, res) => {
     setCors(res);
     try {
-            let body: { name?: string; avatar?: string; oldName?: string; action?: string };
+            let body: { name?: string; avatar?: string; oldName?: string; action?: string; pin?: string };
       try { body = typeof req.body === "string" ? JSON.parse(req.body) : req.body; }
       catch { res.status(400).json({ ok: false, error: "invalid json" }); return; }
       const name = String(body.name || "").slice(0, 32).trim();
       const avatar = String(body.avatar || "🐥").slice(0, 16);
       const oldName = String(body.oldName || "").slice(0, 32).trim();
       const action = String(body.action || "");
-      if (!name) { res.status(400).json({ ok: false, error: "name required" }); return; }
       const db = await getDb();
       if (!db) { res.json({ ok: true }); return; }
+
+      // 전체 초기화 (점수 + 작품) — name 불필요
+      if (action === "resetAll") {
+        await db.delete(scores);
+        await db.delete(works);
+        res.json({ ok: true });
+        return;
+      }
+
+      if (!name) { res.status(400).json({ ok: false, error: "name required" }); return; }
 
       // kid.js의 deleteProfileServer는 POST로 action:'delete' 전송
       if (action === "delete") {
         await db.delete(profiles).where(eq(profiles.name, name));
         await db.delete(scores).where(eq(scores.name, name));
         await db.delete(works).where(eq(works.owner, name));
+        res.json({ ok: true });
+        return;
+      }
+
+      // PIN 설정/제거
+      if (action === "setPin") {
+        const newPin = body.pin ? String(body.pin).replace(/\D/g, "").slice(0, 4) : null;
+        await db.update(profiles).set({ pin: newPin } as any).where(eq(profiles.name, name));
         res.json({ ok: true });
         return;
       }
