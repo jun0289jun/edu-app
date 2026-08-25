@@ -1,4 +1,4 @@
-import { bigint, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { bigint, int, mysqlEnum, mysqlTable, primaryKey, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -130,13 +130,17 @@ export type InsertWork = typeof works.$inferInsert;
  * 테이블은 이미 DB에 존재, 스키마 타입만 선언
  */
 export const scores = mysqlTable("scores", {
-  name: varchar("name", { length: 32 }).notNull().primaryKey(),
+  name: varchar("name", { length: 32 }).notNull(),
   avatar: varchar("avatar", { length: 16 }).notNull().default("🐥"),
   game: varchar("game", { length: 32 }).notNull().default(""),
   score: int("score").notNull().default(0),
   ts: bigint("ts", { mode: "number" }).notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (t) => ({
+  // (name, game)당 1행 = 한 사람이 게임별로 각각 최고점을 가진다.
+  // 단독 PK(name)로 만들면 ON DUPLICATE KEY UPDATE가 게임 간에 서로 덮어쓴다.
+  pk: primaryKey({ columns: [t.name, t.game] }),
+}));
 export type Score = typeof scores.$inferSelect;
 export type InsertScore = typeof scores.$inferInsert;
