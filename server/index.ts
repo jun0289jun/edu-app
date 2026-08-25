@@ -23,12 +23,25 @@ async function startServer() {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   };
+  // scores 테이블은 profiles/works와 달리 생성하는 곳이 없어, 빈 DB에서는
+  // 첫 점수 저장부터 실패한다. (name, game) 복합 PK여야 한 사람이 게임별로
+  // 각각 최고점을 가진다 — 단독 PK면 게임 간에 점수가 서로 덮어써진다.
+  const ensureScoresTable = async (db: ReturnType<typeof connect>) => {
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS scores (" +
+        "name VARCHAR(16) NOT NULL, game VARCHAR(32) NOT NULL, " +
+        "avatar VARCHAR(16) NOT NULL DEFAULT '', score INT NOT NULL DEFAULT 0, " +
+        "ts BIGINT NOT NULL DEFAULT 0, PRIMARY KEY (name, game), " +
+        "INDEX idx_game_score (game, score))"
+    );
+  };
   app.options("/api/leaderboard", (_req, res) => { cors(res); res.sendStatus(200); });
   app.get("/api/leaderboard", async (_req, res) => {
     cors(res);
     if (!process.env.DATABASE_URL) return res.status(503).json({ games: {} });
     try {
       const db = connect({ url: process.env.DATABASE_URL });
+      await ensureScoresTable(db);
       const rows = await db.execute(
         "SELECT game, name, avatar, score FROM (SELECT game, name, avatar, score, ROW_NUMBER() OVER (PARTITION BY game ORDER BY score DESC) AS rn FROM scores) ranked WHERE rn <= 10 ORDER BY game, score DESC"
       ) as Array<{ game: string; name: string; avatar: string; score: number }>;
@@ -52,6 +65,7 @@ async function startServer() {
       const ts = Math.floor(Number(data.ts ?? Date.now()));
       if (!name || !game) return res.status(400).send("invalid");
       const db = connect({ url: process.env.DATABASE_URL });
+      await ensureScoresTable(db);
       await db.execute(
         "INSERT INTO scores (name, game, avatar, score, ts) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE avatar=VALUES(avatar), score=IF(VALUES(score)>score,VALUES(score),score), ts=IF(VALUES(score)>score,VALUES(ts),ts)",
         [name, game, avatar, score, ts]
@@ -65,6 +79,12 @@ async function startServer() {
     process.env.NODE_ENV === "production"
       ? path.resolve(__dirname, "public")
       : path.resolve(__dirname, "..", "client", "public");
+
+  // GET / → /놀이터/ (실제 진입점). express.static보다 먼저 등록해야
+  // 루트의 index.html이 먼저 응답되는 것을 막을 수 있다.
+  app.get("/", (_req, res) => {
+    res.redirect(301, "/놀이터/");
+  });
 
   app.use(express.static(staticPath));
 
