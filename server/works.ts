@@ -17,6 +17,18 @@ function jsonBody(req: Request) {
   return req.body ?? {};
 }
 
+// recipients는 JSON 컬럼이라 드라이버가 이미 배열로 반환한다.
+// String([]) === "" 이므로 JSON.parse에 그대로 넘기면 SyntaxError가 난다.
+function parseRecipients(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((x) => String(x));
+  try {
+    const parsed = JSON.parse(String(value || "[]"));
+    return Array.isArray(parsed) ? parsed.map((x) => String(x)) : [];
+  } catch {
+    return [];
+  }
+}
+
 async function ensureWorksTable(db: ReturnType<typeof connect>) {
   await db.execute(
     "CREATE TABLE IF NOT EXISTS works (" +
@@ -50,33 +62,29 @@ export function registerWorkRoutes(app: Express) {
     try {
       const db = connect({ url: process.env.DATABASE_URL });
       await ensureWorksTable(db);
-      const result = await db.execute(
+      // 소유자/수신자와 종류를 SQL에서 걸러낸다. 예전처럼 전체 행을 content까지
+      // 읽어와 JS에서 거르면 그림 몇 장만 쌓여도 응답이 수십 MB가 된다.
+      const params: (string | number)[] = [profile, profile];
+      let sql =
         "SELECT id, owner, owner_avatar, type, title, content, recipients, ts " +
-          "FROM works ORDER BY ts DESC LIMIT 200",
-      );
+        "FROM works WHERE (owner = ? OR JSON_CONTAINS(recipients, JSON_QUOTE(?)))";
+      if (type) {
+        sql += " AND type = ?";
+        params.push(type);
+      }
+      sql += " ORDER BY ts DESC LIMIT 100";
+      const result = await db.execute(sql, params);
       const rows = result as any[];
-      const works = rows
-        .filter((row: any) => {
-          let recipients: string[] = [];
-          try {
-            recipients = JSON.parse(String(row.recipients || "[]"));
-          } catch {}
-          return (
-            String(row.owner) === profile ||
-            recipients.indexOf(profile) >= 0
-          );
-        })
-        .filter((row: any) => !type || String(row.type) === type)
-        .map((row: any) => ({
-          id: String(row.id),
-          owner: String(row.owner),
-          ownerAvatar: String(row.owner_avatar || "🐥"),
-          type: String(row.type),
-          title: String(row.title || ""),
-          content: String(row.content || ""),
-          recipients: JSON.parse(String(row.recipients || "[]")),
-          ts: Number(row.ts),
-        }));
+      const works = rows.map((row: any) => ({
+        id: String(row.id),
+        owner: String(row.owner),
+        ownerAvatar: String(row.owner_avatar || "🐥"),
+        type: String(row.type),
+        title: String(row.title || ""),
+        content: String(row.content || ""),
+        recipients: parseRecipients(row.recipients),
+        ts: Number(row.ts),
+      }));
       res.json({ works });
     } catch (error) {
       console.error("[Works GET]", error);
