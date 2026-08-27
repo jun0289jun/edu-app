@@ -105,6 +105,10 @@ temp/
 *.sqlite
 *.sqlite3
 
+# DB 백업 — 아이들 그림·메모·PIN 이 들어 있으므로 절대 커밋하지 않는다.
+backups/
+*.sql.gz
+
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 
